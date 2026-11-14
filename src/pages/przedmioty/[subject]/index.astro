@@ -1,0 +1,60 @@
+---
+import type { GetStaticPaths } from 'astro';
+import Arrow from '../../../components/Arrow.astro';
+import Breadcrumbs from '../../../components/Breadcrumbs.astro';
+import CatSitting from '../../../components/CatSitting.astro';
+import Base from '../../../layouts/Base.astro';
+import { formatDate, isoDate } from '../../../lib/format';
+import { getSubjects, type Subject } from '../../../lib/notes';
+
+export const getStaticPaths = (async () => {
+  const subjects = await getSubjects();
+  return subjects.map((subject) => ({
+    params: { subject: subject.slug },
+    props: { subject },
+  }));
+}) satisfies GetStaticPaths;
+
+interface Props {
+  subject: Subject;
+}
+
+const { subject } = Astro.props;
+const heading = subject.fullName ?? subject.title;
+---
+
+<Base title={subject.title} description={subject.description ?? `Notatki z przedmiotu ${heading}.`}>
+  <Breadcrumbs items={[{ label: 'Przedmioty', href: '/' }]} />
+
+  <header class="page-head">
+    <h1 class="page-title">{heading}</h1>
+    {subject.description && <p class="page-lead">{subject.description}</p>}
+  </header>
+
+  {
+    subject.notes.length > 0 ? (
+      <ul class="note-list">
+        {subject.notes.map((note) => (
+          <li>
+            <a class="note-link" href={note.url}>
+              <span class="note-title">{note.title}</span>
+              {note.description && <span class="note-desc">{note.description}</span>}
+              {note.updated && (
+                <time class="note-date" datetime={isoDate(note.updated)}>
+                  {formatDate(note.updated)}
+                </time>
+              )}
+              <Arrow class="note-arrow" />
+            </a>
+          </li>
+        ))}
+      </ul>
+    ) : (
+      <div class="empty">
+        <CatSitting class="empty-cat" />
+        <p class="empty-title">Tu jeszcze nic nie ma</p>
+        <p>Notatki z tego przedmiotu pojawią się wkrótce.</p>
+      </div>
+    )
+  }
+</Base>

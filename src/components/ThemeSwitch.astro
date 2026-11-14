@@ -1,0 +1,83 @@
+---
+/*
+ * Przełącznik motywu. Wygląd aktywnej opcji wynika z data-theme na <html> (CSS),
+ * a sam atrybut ustawia skrypt w <head> layoutu, zanim strona się narysuje.
+ */
+const options = [
+  { value: 'cute', label: 'Motyw słodki' },
+  { value: 'light', label: 'Motyw jasny' },
+  { value: 'dark', label: 'Motyw ciemny' },
+] as const;
+---
+
+<div class="theme-switch" role="group" aria-label="Motyw strony">
+  {
+    options.map((option) => (
+      <button
+        type="button"
+        class="theme-option"
+        data-theme-value={option.value}
+        aria-label={option.label}
+        aria-pressed={option.value === 'cute' ? 'true' : 'false'}
+        title={option.label}
+      >
+        {option.value === 'cute' && (
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" aria-hidden="true">
+            <path d="M5.2 4.2 5.9 11c-1 5.3 2.1 9.5 6.1 9.5s7.1-4.2 6.1-9.5l.7-6.8-4.4 3.1c-1.6-.4-3.2-.4-4.8 0z" />
+            <circle cx="9.6" cy="13.2" r="1.05" fill="currentColor" stroke="none" />
+            <circle cx="14.4" cy="13.2" r="1.05" fill="currentColor" stroke="none" />
+          </svg>
+        )}
+        {option.value === 'light' && (
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true">
+            <circle cx="12" cy="12" r="3.9" />
+            <path d="M12 3v1.8M12 19.2V21M3 12h1.8M19.2 12H21M5.64 5.64l1.27 1.27M17.09 17.09l1.27 1.27M18.36 5.64l-1.27 1.27M6.91 17.09l-1.27 1.27" />
+          </svg>
+        )}
+        {option.value === 'dark' && (
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" aria-hidden="true">
+            <path d="M19.5 14.2A7.8 7.8 0 0 1 9.8 4.5a7.8 7.8 0 1 0 9.7 9.7z" />
+          </svg>
+        )}
+      </button>
+    ))
+  }
+</div>
+
+<script>
+  const THEMES = ['cute', 'light', 'dark'];
+  const STORAGE_KEY = 'theme';
+  const THEME_COLORS: Record<string, string> = { cute: '#ffffff', light: '#ffffff', dark: '#151b23' };
+
+  const root = document.documentElement;
+  const buttons = document.querySelectorAll<HTMLButtonElement>('.theme-option');
+
+  function apply(theme: string) {
+    root.dataset.theme = theme;
+    document.querySelector('meta[name="theme-color"]')?.setAttribute('content', THEME_COLORS[theme]);
+    for (const button of buttons) {
+      button.setAttribute('aria-pressed', String(button.dataset.themeValue === theme));
+    }
+  }
+
+  apply(THEMES.includes(root.dataset.theme ?? '') ? root.dataset.theme! : 'cute');
+
+  for (const button of buttons) {
+    button.addEventListener('click', () => {
+      const theme = button.dataset.themeValue!;
+      apply(theme);
+      try {
+        localStorage.setItem(STORAGE_KEY, theme);
+      } catch {
+        // Tryb prywatny lub zablokowany zapis: motyw działa do końca wizyty.
+      }
+    });
+  }
+
+  // Zmiana motywu w innej karcie.
+  window.addEventListener('storage', (event) => {
+    if (event.key === STORAGE_KEY && event.newValue && THEMES.includes(event.newValue)) {
+      apply(event.newValue);
+    }
+  });
+</script>

@@ -1,0 +1,40 @@
+---
+/*
+ * Siedzący kot. Dolna krawędź tułowia leży na y=84, ogon zwisa poniżej,
+ * więc ilustrację można posadzić na krawędzi karty.
+ * Kolory: --cat-fur, --cat-line, --cat-pink (src/styles/tokens.css).
+ */
+interface Props {
+  class?: string;
+}
+const { class: className } = Astro.props;
+---
+
+<svg class={className} viewBox="0 0 120 108" aria-hidden="true" focusable="false">
+  <g fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M85 74c13 0 17 12 10 24" stroke="var(--cat-line)" stroke-width="10"></path>
+    <path d="M85 74c13 0 17 12 10 24" stroke="var(--cat-fur)" stroke-width="5.5"></path>
+  </g>
+  <g stroke="var(--cat-line)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M33 84c-4-20 7-37 27-37s31 17 27 37z" fill="var(--cat-fur)"></path>
+    <path
+      d="M39.5 31 36.5 9.5 52 18.5c5.2-1.5 10.8-1.5 16 0l15.5-9L80.5 31c3 13-6.5 22.5-20.5 22.5S36.5 44 39.5 31z"
+      fill="var(--cat-fur)"></path>
+  </g>
+  <path d="M41.5 16.5 43 26l6.5-5.5z" fill="var(--cat-pink)"></path>
+  <path d="M78.5 16.5 77 26l-6.5-5.5z" fill="var(--cat-pink)"></path>
+  <ellipse cx="45.5" cy="41" rx="4.2" ry="2.6" fill="var(--cat-pink)" opacity=".55"></ellipse>
+  <ellipse cx="74.5" cy="41" rx="4.2" ry="2.6" fill="var(--cat-pink)" opacity=".55"></ellipse>
+  <g fill="var(--cat-line)">
+    <ellipse cx="51.5" cy="34.5" rx="2.3" ry="3.1"></ellipse>
+    <ellipse cx="68.5" cy="34.5" rx="2.3" ry="3.1"></ellipse>
+    <path d="M57.8 40.2h4.4L60 42.8z" stroke="var(--cat-line)" stroke-width="1" stroke-linejoin="round"></path>
+  </g>
+  <g fill="none" stroke="var(--cat-line)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M55.5 45c1.5 1.8 3.5 1.6 4.5-.4 1 2 3 2.2 4.5.4"></path>
+    <path d="M50 84c0-4.5 2.2-7 5-7s5 2.5 5 7M60 84c0-4.5 2.2-7 5-7s5 2.5 5 7" stroke-width="2.3"></path>
+  </g>
+  <g fill="none" stroke="var(--cat-line)" stroke-width="1.3" stroke-linecap="round" opacity=".7">
+    <path d="M33.5 38.5 25 36.5M33.5 42.5 25.5 44.5M86.5 38.5 95 36.5M86.5 42.5 94.5 44.5"></path>
+  </g>
+</svg>

@@ -1,0 +1,21 @@
+---
+interface Props {
+  class?: string;
+}
+const { class: className } = Astro.props;
+---
+
+<svg class={className} viewBox="0 0 76 26" aria-hidden="true" focusable="false" fill="currentColor">
+  <defs>
+    <g id="paw-print">
+      <path d="M0 0.6c2.7 0 4.8 2 4.8 4.2 0 1.9-1.9 2.7-4.8 2.7s-4.8-.8-4.8-2.7C-4.8 2.6-2.7.6 0 .6z"></path>
+      <ellipse cx="-5.2" cy="-.8" rx="1.6" ry="2.2" transform="rotate(-24 -5.2 -.8)"></ellipse>
+      <ellipse cx="-1.9" cy="-3.8" rx="1.7" ry="2.4" transform="rotate(-8 -1.9 -3.8)"></ellipse>
+      <ellipse cx="1.9" cy="-3.8" rx="1.7" ry="2.4" transform="rotate(8 1.9 -3.8)"></ellipse>
+      <ellipse cx="5.2" cy="-.8" rx="1.6" ry="2.2" transform="rotate(24 5.2 -.8)"></ellipse>
+    </g>
+  </defs>
+  <use href="#paw-print" transform="translate(10 17) rotate(78)"></use>
+  <use href="#paw-print" transform="translate(37 9) rotate(102)"></use>
+  <use href="#paw-print" transform="translate(64 17) rotate(78)"></use>
+</svg>
