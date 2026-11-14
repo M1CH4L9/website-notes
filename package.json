@@ -1,0 +1,23 @@
+{
+  "name": "koci-notatnik",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "node scripts/astro.mjs dev",
+    "build": "node scripts/astro.mjs build",
+    "preview": "node scripts/astro.mjs preview --host 0.0.0.0",
+    "check": "node scripts/astro.mjs check",
+    "test": "npm run build && node scripts/smoke-test.mjs"
+  },
+  "dependencies": {
+    "@fontsource-variable/nunito-sans": "^5.2.0",
+    "@fontsource/lora": "^5.2.0",
+    "astro": "^5.16.0"
+  },
+  "devDependencies": {
+    "@astrojs/check": "^0.9.4",
+    "jsdom": "^31.0.1",
+    "typescript": "^5.9.0"
+  }
+}
