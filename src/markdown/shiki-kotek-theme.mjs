@@ -1,10 +1,10 @@
 /*
- * Motyw podświetlania składni dla słodkiego motywu strony.
- * Kolory są dobrane tak, żeby na tle bloku kodu (--code-bg w motywie "cute")
+ * Motywy podświetlania składni dla trybu cute: jasny i ciemny.
+ * Kolory są dobrane tak, żeby na tle bloku kodu (--code-bg w src/styles/tokens.css)
  * każdy miał kontrast co najmniej 4.5:1.
  */
 
-const palette = {
+const light = {
   foreground: '#3d2230',
   background: '#fffafc',
   comment: '#8a6475',
@@ -19,138 +19,158 @@ const palette = {
   deleted: '#c0262d',
 };
 
-export const kotekTheme = {
-  name: 'kotek',
-  type: 'light',
-  colors: {
-    'editor.foreground': palette.foreground,
-    'editor.background': palette.background,
-  },
-  tokenColors: [
-    {
-      scope: ['comment', 'punctuation.definition.comment', 'string.comment'],
-      settings: { foreground: palette.comment, fontStyle: 'italic' },
-    },
-    {
-      scope: [
-        'keyword',
-        'storage',
-        'storage.type',
-        'storage.modifier',
-        'keyword.control',
-        'keyword.operator.new',
-        'keyword.operator.expression',
-        'keyword.operator.logical.python',
-        'variable.language',
-        'entity.name.tag',
-        'punctuation.definition.tag',
-        'support.type.property-name.css',
-        'markup.heading',
-        'markup.heading entity.name',
-        'entity.name.section',
-      ],
-      settings: { foreground: palette.keyword },
-    },
-    {
-      scope: [
-        'string',
-        'string.quoted',
-        'punctuation.definition.string',
-        'string punctuation.section.embedded source',
-        'markup.inline.raw',
-        'markup.raw',
-      ],
-      settings: { foreground: palette.string },
-    },
-    {
-      scope: [
-        'constant',
-        'constant.numeric',
-        'constant.language',
-        'constant.character',
-        'constant.character.escape',
-        'constant.other',
-        'support.constant',
-        'keyword.other.unit',
-        'string.regexp',
-        'variable.other.constant',
-        'variable.other.enummember',
-      ],
-      settings: { foreground: palette.constant },
-    },
-    {
-      scope: [
-        'entity.name.function',
-        'support.function',
-        'meta.function-call',
-        'meta.function-call.generic',
-        'entity.other.attribute-name',
-        'meta.selector',
-        'entity.other.attribute-name.class.css',
-        'entity.other.attribute-name.id.css',
-      ],
-      settings: { foreground: palette.function },
-    },
-    {
-      scope: [
-        'entity.name.type',
-        'entity.name.class',
-        'entity.name.namespace',
-        'entity.other.inherited-class',
-        'support.class',
-        'support.type',
-        'storage.type.primitive',
-        'storage.type.built-in',
-        'keyword.type',
-      ],
-      settings: { foreground: palette.type },
-    },
-    {
-      scope: [
-        'variable.other.property',
-        'variable.other.object.property',
-        'meta.object-literal.key',
-        'support.type.property-name',
-        'support.type.property-name.json',
-        'entity.name.tag.yaml',
-        'variable.parameter',
-        'variable.other.readwrite.shell',
-      ],
-      settings: { foreground: palette.property },
-    },
-    {
-      scope: ['variable', 'variable.other', 'meta.embedded', 'source'],
-      settings: { foreground: palette.foreground },
-    },
-    {
-      scope: [
-        'punctuation',
-        'meta.brace',
-        'keyword.operator',
-        'keyword.operator.assignment',
-        'punctuation.separator',
-        'punctuation.terminator',
-      ],
-      settings: { foreground: palette.punctuation },
-    },
-    {
-      scope: ['markup.inserted', 'meta.diff.header.to-file', 'punctuation.definition.inserted'],
-      settings: { foreground: palette.inserted },
-    },
-    {
-      scope: ['markup.deleted', 'meta.diff.header.from-file', 'punctuation.definition.deleted'],
-      settings: { foreground: palette.deleted },
-    },
-    {
-      scope: ['meta.diff.range', 'meta.diff.header', 'meta.separator'],
-      settings: { foreground: palette.function },
-    },
-    { scope: ['markup.bold'], settings: { fontStyle: 'bold' } },
-    { scope: ['markup.italic'], settings: { fontStyle: 'italic' } },
-    {
-      scope: ['markup.underline.link', 'string.other.link'],
-      settings: { foreground: palette.type },
-    },
-    { scope: ['invalid', 'invalid.illegal'], settings: { foreground: palette.deleted } },
-  ],
+const dark = {
+  foreground: '#f7eaf0',
+  background: '#20151d',
+  comment: '#ab8d9c',
+  keyword: '#ff8fb9',
+  string: '#8fe0bf',
+  constant: '#ffb870',
+  function: '#caa8ff',
+  type: '#7fd3f2',
+  property: '#ffc4d9',
+  punctuation: '#c5a9b6',
+  inserted: '#8fe0bf',
+  deleted: '#ff9a9a',
 };
+
+function createTheme(name, type, palette) {
+  return {
+    name,
+    type,
+    colors: {
+      'editor.foreground': palette.foreground,
+      'editor.background': palette.background,
+    },
+    tokenColors: [
+      {
+        scope: ['comment', 'punctuation.definition.comment', 'string.comment'],
+        settings: { foreground: palette.comment, fontStyle: 'italic' },
+      },
+      {
+        scope: [
+          'keyword',
+          'storage',
+          'storage.type',
+          'storage.modifier',
+          'keyword.control',
+          'keyword.operator.new',
+          'keyword.operator.expression',
+          'keyword.operator.logical.python',
+          'variable.language',
+          'entity.name.tag',
+          'punctuation.definition.tag',
+          'support.type.property-name.css',
+          'markup.heading',
+          'markup.heading entity.name',
+          'entity.name.section',
+        ],
+        settings: { foreground: palette.keyword },
+      },
+      {
+        scope: [
+          'string',
+          'string.quoted',
+          'punctuation.definition.string',
+          'string punctuation.section.embedded source',
+          'markup.inline.raw',
+          'markup.raw',
+        ],
+        settings: { foreground: palette.string },
+      },
+      {
+        scope: [
+          'constant',
+          'constant.numeric',
+          'constant.language',
+          'constant.character',
+          'constant.character.escape',
+          'constant.other',
+          'support.constant',
+          'keyword.other.unit',
+          'string.regexp',
+          'variable.other.constant',
+          'variable.other.enummember',
+        ],
+        settings: { foreground: palette.constant },
+      },
+      {
+        scope: [
+          'entity.name.function',
+          'support.function',
+          'meta.function-call',
+          'meta.function-call.generic',
+          'entity.other.attribute-name',
+          'meta.selector',
+          'entity.other.attribute-name.class.css',
+          'entity.other.attribute-name.id.css',
+        ],
+        settings: { foreground: palette.function },
+      },
+      {
+        scope: [
+          'entity.name.type',
+          'entity.name.class',
+          'entity.name.namespace',
+          'entity.other.inherited-class',
+          'support.class',
+          'support.type',
+          'storage.type.primitive',
+          'storage.type.built-in',
+          'keyword.type',
+        ],
+        settings: { foreground: palette.type },
+      },
+      {
+        scope: [
+          'variable.other.property',
+          'variable.other.object.property',
+          'meta.object-literal.key',
+          'support.type.property-name',
+          'support.type.property-name.json',
+          'entity.name.tag.yaml',
+          'variable.parameter',
+          'variable.other.readwrite.shell',
+        ],
+        settings: { foreground: palette.property },
+      },
+      {
+        scope: ['variable', 'variable.other', 'meta.embedded', 'source'],
+        settings: { foreground: palette.foreground },
+      },
+      {
+        scope: [
+          'punctuation',
+          'meta.brace',
+          'keyword.operator',
+          'keyword.operator.assignment',
+          'punctuation.separator',
+          'punctuation.terminator',
+        ],
+        settings: { foreground: palette.punctuation },
+      },
+      {
+        scope: ['markup.inserted', 'meta.diff.header.to-file', 'punctuation.definition.inserted'],
+        settings: { foreground: palette.inserted },
+      },
+      {
+        scope: ['markup.deleted', 'meta.diff.header.from-file', 'punctuation.definition.deleted'],
+        settings: { foreground: palette.deleted },
+      },
+      {
+        scope: ['meta.diff.range', 'meta.diff.header', 'meta.separator'],
+        settings: { foreground: palette.function },
+      },
+      { scope: ['markup.bold'], settings: { fontStyle: 'bold' } },
+      { scope: ['markup.italic'], settings: { fontStyle: 'italic' } },
+      {
+        scope: ['markup.underline.link', 'string.other.link'],
+        settings: { foreground: palette.type },
+      },
+      { scope: ['invalid', 'invalid.illegal'], settings: { foreground: palette.deleted } },
+    ],
+  };
+}
+
+export const kotekLightTheme = createTheme('kotek-light', 'light', light);
+export const kotekDarkTheme = createTheme('kotek-dark', 'dark', dark);

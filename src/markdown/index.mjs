@@ -6,7 +6,8 @@ import { rehypeCodeFrame, codeTitleTransformer } from './rehype-code-frame.mjs';
 import { rehypeHeadingAnchors } from './rehype-heading-anchors.mjs';
 import { rehypeFigures } from './rehype-figures.mjs';
 import { rehypeTableWrap } from './rehype-table-wrap.mjs';
-import { kotekTheme } from './shiki-kotek-theme.mjs';
+import { contrastTransformer } from './shiki-contrast.mjs';
+import { kotekDarkTheme, kotekLightTheme } from './shiki-kotek-theme.mjs';
 
 /*
  * Jedno miejsce z całą konfiguracją Markdowna. Korzysta z niego astro.config.mjs,
@@ -27,14 +28,15 @@ export const rehypePlugins = [
 ];
 
 export const shikiConfig = {
-  // Klucze odpowiadają wartościom data-theme na <html>. Kolory trafiają do zmiennych
-  // --shiki-cute / --shiki-light / --shiki-dark, a wybór robi CSS (src/styles/prose.css).
+  // Każdy motyw trafia do własnej zmiennej CSS (--shiki-dark, --shiki-light, --shiki-cute-light,
+  // --shiki-cute-dark), a wyboru dokonuje CSS na podstawie atrybutów na <html> (src/styles/prose.css).
   themes: {
-    cute: kotekTheme,
-    light: 'github-light',
     dark: 'github-dark',
+    light: 'github-light',
+    'cute-light': kotekLightTheme,
+    'cute-dark': kotekDarkTheme,
   },
   defaultColor: false,
   wrap: false,
-  transformers: [codeTitleTransformer],
+  transformers: [codeTitleTransformer, contrastTransformer],
 };

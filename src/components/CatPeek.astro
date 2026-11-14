@@ -24,8 +24,10 @@ const { class: className } = Astro.props;
       stroke-linejoin="round"></path>
     <path d="M41.5 16.5 43 26l6.5-5.5z" fill="var(--cat-pink)"></path>
     <path d="M78.5 16.5 77 26l-6.5-5.5z" fill="var(--cat-pink)"></path>
-    <ellipse cx="51.5" cy="33.5" rx="2.3" ry="3.1" fill="var(--cat-line)"></ellipse>
-    <ellipse cx="68.5" cy="33.5" rx="2.3" ry="3.1" fill="var(--cat-line)"></ellipse>
+    <g class="cat-peek-eyes" fill="var(--cat-line)">
+      <ellipse cx="51.5" cy="33.5" rx="2.3" ry="3.1"></ellipse>
+      <ellipse cx="68.5" cy="33.5" rx="2.3" ry="3.1"></ellipse>
+    </g>
   </g>
   <g fill="var(--cat-fur)" stroke="var(--cat-line)" stroke-width="2.3" stroke-linejoin="round" stroke-linecap="round">
     <path d="M27 40.5c0-3.6 2.9-6 6.5-6s6.5 2.4 6.5 6v2.5c0 2.5-2.9 4-6.5 4s-6.5-1.5-6.5-4z"></path>

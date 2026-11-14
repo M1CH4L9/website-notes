@@ -157,7 +157,7 @@ Polecenie `chmod 600 ~/.ssh/id_ed25519` ogranicza dostęp do klucza prywatnego. 
 1. Wygeneruj klucz:
 
    ```bash
-   ssh-keygen -t ed25519 -C "michal@laptop"
+   ssh-keygen -t ed25519 -C "student@laptop"
    ```
 
 2. Skopiuj klucz publiczny na serwer poleceniem `ssh-copy-id`.

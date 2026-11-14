@@ -1,10 +1,10 @@
-# Notatki Michała
+# notatnik.
 
 Publiczna strona z notatkami ze studiów. Układ jest prosty: przedmiot, lista notatek, notatka.
 
 ## Stos
 
-- [Astro](https://astro.build) w trybie statycznym. Wynik to zwykły HTML i CSS, JavaScript obsługuje tylko przełącznik motywu, kopiowanie kodu i spis treści.
+- [Astro](https://astro.build) w trybie statycznym. Wynik to zwykły HTML i CSS, JavaScript obsługuje tylko przełączniki wyglądu, kopiowanie kodu i spis treści.
 - Treści w Markdownie i MDX (kolekcje treści Astro), przetwarzane przez remark i rehype.
 - Shiki do podświetlania składni, KaTeX do wzorów.
 - Hosting na Vercelu. `vercel.json` wskazuje framework, więc projekt buduje się bez ustawień w panelu.
@@ -85,9 +85,21 @@ Obrazki trzymaj obok notatek (na przykład w `notatki/<przedmiot>/obrazki/`) i p
 
 ## Motywy
 
-Są trzy: `cute` (domyślny), `light` i `dark`. Wybór zapisuje się w `localStorage` pod kluczem `theme`, a krótki skrypt w `<head>` ustawia atrybut `data-theme` przed pierwszym rysowaniem strony.
+Wygląd składa się z dwóch niezależnych ustawień, oba siedzą w atrybutach na `<html>`:
 
-Wszystkie kolory, zaokrąglenia i kroje pisma są zmiennymi w `src/styles/tokens.css`. Kolory kodu dla motywu słodkiego są w `src/markdown/shiki-kotek-theme.mjs`, pozostałe dwa motywy używają kolorów GitHuba.
+| Ustawienie | Atrybut | Wartości | Domyślnie | Klucz w `localStorage` |
+| --- | --- | --- | --- | --- |
+| Jasność | `data-theme` | `dark`, `light` | `dark` | `theme` |
+| Tryb cute | `data-cute` | `true`, `false` | `false` | `cute` (`1` lub `0`) |
+
+Tryb cute działa z jasnym i z ciemnym: zmienia paletę na różową, kroje nagłówków i zaokrąglenia oraz pokazuje kocie ilustracje.
+
+- `src/components/ThemeInit.astro`: skrypt w `<head>`, który ustawia oba atrybuty przed pierwszym rysowaniem strony, więc nic nie miga.
+- `src/components/ThemeSwitch.astro`: suwak cute i przełącznik jasny/ciemny w nagłówku.
+- `src/styles/tokens.css`: wszystkie kolory, zaokrąglenia i kroje pisma jako zmienne, po jednym bloku na każdy z czterech wariantów.
+- `src/markdown/shiki-kotek-theme.mjs`: kolory kodu dla trybu cute. Bez niego kod używa kolorów GitHuba.
+
+Nowy element interfejsu powinien korzystać ze zmiennych z `tokens.css`, wtedy od razu działa we wszystkich wariantach. Ilustracje z kotami dostają `display: var(--cat-display)`, żeby było je widać tylko w trybie cute.
 
 ## Struktura kodu
 
@@ -97,7 +109,7 @@ src/content.config.ts     schemat przedmiotów i notatek
 src/lib/notes.ts          odczyt przedmiotów i notatek (jedyne miejsce, które zna źródło danych)
 src/markdown/             wtyczki Markdowna: bloki uwag, ramki kodu, kotwice, tabele, rysunki
 src/pages/                strony: główna, przedmiot, notatka, 404
-src/components/           nagłówek, przełącznik motywu, spis treści, ilustracje SVG
+src/components/           przełączniki wyglądu, spis treści, ilustracje SVG
 src/styles/               tokens.css (motywy), base.css (układ), prose.css (treść notatki)
 src/site.config.ts        nazwa i opis strony
 ```

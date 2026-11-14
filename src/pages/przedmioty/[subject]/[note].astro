@@ -6,6 +6,7 @@ import '../../../styles/prose.css';
 import type { GetStaticPaths } from 'astro';
 import { render } from 'astro:content';
 import Breadcrumbs from '../../../components/Breadcrumbs.astro';
+import CatPeek from '../../../components/CatPeek.astro';
 import NoteScripts from '../../../components/NoteScripts.astro';
 import Toc from '../../../components/Toc.astro';
 import Base from '../../../layouts/Base.astro';
@@ -69,6 +70,7 @@ const { Content, headings } = await render(note.entry);
       {
         (previous || next) && (
           <nav class="note-pager" aria-label="Sąsiednie notatki">
+            <CatPeek class="pager-cat" />
             {previous && (
               <a class="pager-link is-previous" href={previous.url} rel="prev">
                 <span class="pager-label">Poprzednia</span>

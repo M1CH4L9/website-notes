@@ -7,6 +7,8 @@
 html {
   -webkit-text-size-adjust: 100%;
   text-size-adjust: 100%;
+  /* Własne stany :active zastępują systemowy prostokąt po dotknięciu. */
+  -webkit-tap-highlight-color: transparent;
   scroll-padding-top: 1.25rem;
   background: var(--bg);
 }
@@ -51,15 +53,26 @@ a {
   color: var(--accent);
   text-decoration-thickness: 0.08em;
   text-underline-offset: 0.2em;
+  transition: color var(--duration-fast) ease;
 }
 
-a:hover {
-  color: var(--accent-hover);
+@media (hover: hover) {
+  a:hover {
+    color: var(--accent-hover);
+  }
 }
 
+/*
+ * Obrys fokusu idzie po kształcie elementu: przeglądarka bierze jego własny border-radius.
+ * Zwykłe linki w tekście nie mają zaokrąglenia, więc dostają małe (:where nie podnosi wagi
+ * selektora, karty i przyciski zachowują swoje).
+ */
 :focus-visible {
   outline: 2px solid var(--focus-ring);
   outline-offset: 2px;
+}
+
+:where(a:focus-visible, summary:focus-visible) {
   border-radius: 4px;
 }
 
@@ -71,6 +84,7 @@ svg {
 button {
   font: inherit;
   color: inherit;
+  touch-action: manipulation;
 }
 
 .visually-hidden {
@@ -131,17 +145,28 @@ button {
   }
 }
 
+.site-header-actions {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* Logo */
+
 .brand {
   display: inline-flex;
   align-items: center;
   gap: 0.55rem;
   min-width: 0;
-  padding-block: 0.4rem;
+  padding-block: 0.3rem;
+  border-radius: var(--radius-m);
   color: var(--text);
-  font-family: var(--font-heading);
-  font-weight: var(--heading-weight);
-  font-size: 1.0625rem;
-  letter-spacing: var(--heading-tracking);
+  font-family: var(--font-brand);
+  font-weight: 800;
+  font-size: 1.25rem;
+  letter-spacing: -0.02em;
+  line-height: 1;
   text-decoration: none;
 }
 
@@ -151,77 +176,227 @@ button {
 
 .brand-mark {
   flex: none;
-  width: 1.75rem;
-  height: 1.75rem;
-  color: var(--accent);
+  width: 2rem;
+  height: 2rem;
+  transition: transform var(--duration) var(--ease-spring);
 }
 
 .brand-name {
-  overflow: hidden;
-  text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-/* Przełącznik motywu */
-
-.theme-switch {
-  flex: none;
-  display: inline-flex;
-  gap: 2px;
-  padding: 3px;
-  border: 1px solid var(--border);
-  border-radius: 999px;
-  background: var(--surface-sunken);
+.brand-dot {
+  color: var(--brand);
 }
 
-.theme-option {
+@media (min-width: 40rem) {
+  .brand {
+    gap: 0.65rem;
+    font-size: 1.375rem;
+  }
+
+  .brand-mark {
+    width: 2.25rem;
+    height: 2.25rem;
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  @media (hover: hover) {
+    .brand:hover .brand-mark {
+      transform: rotate(-6deg) scale(1.04);
+    }
+  }
+
+  .brand:active .brand-mark {
+    transform: scale(0.94);
+  }
+}
+
+/*
+ * Sterowanie wyglądem (src/components/ThemeSwitch.astro).
+ * Stan wynika z atrybutów data-theme i data-cute na <html>, więc jest poprawny
+ * przed uruchomieniem skryptów.
+ */
+
+.theme-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+}
+
+.cute-switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 2.5rem;
+  padding: 0 0.3rem;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.cute-switch-label {
+  display: none;
+  transition: color var(--duration) ease;
+}
+
+@media (min-width: 40rem) {
+  .cute-switch {
+    padding-left: 0.6rem;
+  }
+
+  .cute-switch-label {
+    display: inline;
+  }
+}
+
+.cute-switch-track {
+  position: relative;
+  flex: none;
+  width: 2.75rem;
+  height: 1.625rem;
+  border-radius: 999px;
+  background: var(--control-track);
+  box-shadow: inset 0 0 0 1px var(--border-strong);
+  transition:
+    background-color var(--duration) ease,
+    box-shadow var(--duration) ease;
+}
+
+.cute-switch-thumb {
+  position: absolute;
+  top: 0.125rem;
+  left: 0.125rem;
+  width: 1.375rem;
+  height: 1.375rem;
+  filter: drop-shadow(0 1px 1px rgb(0 0 0 / 0.3));
+  transition: transform 0.22s var(--ease-spring);
+}
+
+.cute-switch-thumb svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  transition: transform var(--duration-fast) ease;
+}
+
+.cute-thumb-head {
+  fill: var(--control-thumb);
+  stroke: var(--control-thumb);
+  stroke-width: 1.6;
+}
+
+.cute-thumb-eyes-open {
+  fill: var(--control-ink);
+  opacity: 0;
+}
+
+.cute-thumb-eyes-closed {
+  fill: none;
+  stroke: var(--control-ink);
+  stroke-width: 1.5;
+}
+
+.cute-thumb-eyes-open,
+.cute-thumb-eyes-closed {
+  transition: opacity var(--duration) ease;
+}
+
+[data-cute='true'] .cute-switch-track {
+  background: var(--accent);
+  box-shadow: inset 0 0 0 1px var(--accent);
+}
+
+[data-cute='true'] .cute-switch-thumb {
+  transform: translateX(1.125rem);
+}
+
+[data-cute='true'] .cute-thumb-eyes-open {
+  opacity: 1;
+}
+
+[data-cute='true'] .cute-thumb-eyes-closed {
+  opacity: 0;
+}
+
+[data-cute='true'] .cute-switch-label {
+  color: var(--text);
+}
+
+.mode-toggle {
+  position: relative;
   display: grid;
   place-items: center;
-  width: 2.25rem;
-  height: 2.25rem;
+  width: 2.5rem;
+  height: 2.5rem;
   padding: 0;
-  border: 0;
+  border: 1px solid var(--border);
   border-radius: 999px;
   background: transparent;
   color: var(--text-muted);
   cursor: pointer;
   transition:
-    background-color 0.15s ease,
-    color 0.15s ease;
+    background-color var(--duration-fast) ease,
+    border-color var(--duration-fast) ease,
+    color var(--duration-fast) ease,
+    transform var(--duration-fast) ease;
 }
 
-.theme-option svg {
-  width: 1.2rem;
-  height: 1.2rem;
+.mode-icon {
+  grid-area: 1 / 1;
+  width: 1.25rem;
+  height: 1.25rem;
+  transition:
+    opacity var(--duration) ease,
+    transform 0.3s var(--ease-out);
 }
 
-@media (pointer: coarse) {
-  .theme-option {
-    width: 2.5rem;
-    height: 2.5rem;
+/* Widać ikonę aktualnego motywu: księżyc w ciemnym, słońce w jasnym. */
+.mode-icon-sun,
+[data-theme='light'] .mode-icon-moon {
+  opacity: 0;
+  transform: rotate(-70deg) scale(0.5);
+}
+
+[data-theme='light'] .mode-icon-sun {
+  opacity: 1;
+  transform: none;
+}
+
+@media (hover: hover) {
+  .cute-switch:hover {
+    color: var(--text);
+  }
+
+  .cute-switch:hover .cute-switch-track {
+    box-shadow: inset 0 0 0 1px var(--text-muted);
+  }
+
+  [data-cute='true'] .cute-switch:hover .cute-switch-track {
+    background: var(--accent-hover);
+    box-shadow: inset 0 0 0 1px var(--accent-hover);
+  }
+
+  .mode-toggle:hover {
+    border-color: var(--border-strong);
+    background: var(--surface-sunken);
+    color: var(--text);
   }
 }
 
-@media (max-width: 22.49rem) {
-  .theme-option {
-    width: 2.125rem;
-    height: 2.125rem;
+@media (prefers-reduced-motion: no-preference) {
+  .cute-switch:active .cute-switch-thumb svg {
+    transform: scale(0.88);
   }
-}
 
-.theme-option:hover {
-  color: var(--text);
-}
-
-/* Stan aktywny wynika z data-theme na <html>, więc jest poprawny przed uruchomieniem skryptów. */
-[data-theme='cute'] .theme-option[data-theme-value='cute'],
-[data-theme='light'] .theme-option[data-theme-value='light'],
-[data-theme='dark'] .theme-option[data-theme-value='dark'] {
-  background: var(--surface);
-  color: var(--accent);
-  box-shadow:
-    0 0 0 1px var(--border),
-    0 1px 2px rgb(0 0 0 / 0.08);
+  .mode-toggle:active {
+    transform: scale(0.92);
+  }
 }
 
 /* Treść */
@@ -271,9 +446,15 @@ button {
   text-decoration: none;
 }
 
-.breadcrumbs a:hover {
+.breadcrumbs a:active {
   color: var(--accent);
-  text-decoration: underline;
+}
+
+@media (hover: hover) {
+  .breadcrumbs a:hover {
+    color: var(--accent);
+    text-decoration: underline;
+  }
 }
 
 .page-head {
@@ -334,21 +515,17 @@ button {
   color: var(--text);
   text-decoration: none;
   transition:
-    border-color 0.15s ease,
-    box-shadow 0.15s ease,
-    transform 0.15s ease;
+    border-color var(--duration) ease,
+    box-shadow var(--duration) ease,
+    transform var(--duration) var(--ease-out);
 }
 
 .subject-card:hover {
-  border-color: var(--border-strong);
-  box-shadow: var(--shadow-card-hover);
   color: var(--text);
 }
 
-@media (hover: hover) and (prefers-reduced-motion: no-preference) {
-  .subject-card:hover {
-    transform: translateY(-2px);
-  }
+.subject-card:active {
+  border-color: var(--accent);
 }
 
 .subject-code {
@@ -380,56 +557,37 @@ button {
   width: 1.25rem;
   height: 1.25rem;
   color: var(--accent);
-  transition: transform 0.15s ease;
+  transition: transform var(--duration) var(--ease-out);
 }
 
-@media (hover: hover) and (prefers-reduced-motion: no-preference) {
-  .subject-card:hover .subject-arrow {
-    transform: translateX(3px);
+@media (hover: hover) {
+  .subject-card:hover {
+    border-color: var(--border-strong);
+    box-shadow: var(--shadow-card-hover);
   }
 }
 
-/* Kot wyglądający zza pierwszej karty. Widoczny tylko w słodkim motywie. */
-[data-theme='cute'] .has-cat {
-  padding-top: 0.5rem;
-}
+@media (prefers-reduced-motion: no-preference) {
+  @media (hover: hover) {
+    .subject-card:hover {
+      transform: translateY(-2px);
+    }
 
-.card-cat {
-  --cat-width: 6.25rem;
-  display: var(--cat-display);
-  position: absolute;
-  right: 1.5rem;
-  /* Krawędź karty wypada na y=40 z 50 jednostek wysokości rysunku. */
-  bottom: calc(100% - var(--cat-width) * 10 / 120 - 1px);
-  z-index: 1;
-  width: var(--cat-width);
-  height: auto;
-  pointer-events: none;
-}
-
-.cat-peek-head {
-  transition: transform 0.2s ease;
-}
-
-@media (hover: hover) and (prefers-reduced-motion: no-preference) {
-  .cat-peek-head {
-    transform: translateY(5px);
+    .subject-card:hover .subject-arrow {
+      transform: translateX(3px);
+    }
   }
 
-  .subject-item:hover .cat-peek-head {
-    transform: translateY(0);
-  }
-
-  .card-cat {
-    transition: transform 0.15s ease;
-  }
-
-  .subject-item:hover .card-cat {
-    transform: translateY(-2px);
+  .subject-card:active {
+    transform: scale(0.985);
   }
 }
 
 /* Lista notatek w przedmiocie */
+
+.note-list-wrap {
+  position: relative;
+}
 
 .note-list {
   margin: 0;
@@ -439,7 +597,6 @@ button {
   border-radius: var(--radius-l);
   background: var(--surface);
   box-shadow: var(--shadow-card);
-  overflow: hidden;
 }
 
 .note-list li + li {
@@ -447,14 +604,27 @@ button {
 }
 
 .note-link {
+  --corner: calc(var(--radius-l) - 1px);
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
   gap: 0.2rem 1rem;
   padding: 1rem 1.1rem;
+  border-radius: 0;
   color: var(--text);
   text-decoration: none;
-  transition: background-color 0.12s ease;
+  transition: background-color var(--duration-fast) ease;
+}
+
+/* Skrajne wiersze mają rogi listy, dzięki czemu tło i obrys fokusu trzymają jej kształt. */
+.note-list li:first-child .note-link {
+  border-top-left-radius: var(--corner);
+  border-top-right-radius: var(--corner);
+}
+
+.note-list li:last-child .note-link {
+  border-bottom-left-radius: var(--corner);
+  border-bottom-right-radius: var(--corner);
 }
 
 @media (min-width: 40rem) {
@@ -464,13 +634,15 @@ button {
 }
 
 .note-link:hover {
-  background: var(--accent-soft);
   color: var(--text);
 }
 
 .note-link:focus-visible {
   outline-offset: -2px;
-  border-radius: var(--radius-l);
+}
+
+.note-link:active {
+  background: var(--accent-soft);
 }
 
 .note-title {
@@ -479,10 +651,7 @@ button {
   font-weight: var(--heading-weight);
   font-size: 1.125rem;
   line-height: 1.3;
-}
-
-.note-link:hover .note-title {
-  color: var(--accent);
+  transition: color var(--duration-fast) ease;
 }
 
 .note-desc {
@@ -505,10 +674,30 @@ button {
   width: 1.25rem;
   height: 1.25rem;
   color: var(--border-strong);
+  transition:
+    color var(--duration-fast) ease,
+    transform var(--duration) var(--ease-out);
 }
 
-.note-link:hover .note-arrow {
+.note-link:active .note-arrow {
   color: var(--accent);
+}
+
+@media (hover: hover) {
+  .note-link:hover {
+    background: var(--accent-soft);
+  }
+
+  .note-link:hover .note-title,
+  .note-link:hover .note-arrow {
+    color: var(--accent);
+  }
+}
+
+@media (hover: hover) and (prefers-reduced-motion: no-preference) {
+  .note-link:hover .note-arrow {
+    transform: translateX(3px);
+  }
 }
 
 @media (min-width: 48rem) {
@@ -589,11 +778,29 @@ button {
   color: var(--on-accent);
   font-weight: 600;
   text-decoration: none;
+  transition:
+    background-color var(--duration-fast) ease,
+    transform var(--duration-fast) ease;
 }
 
 .button-link:hover {
-  background: var(--accent-hover);
   color: var(--on-accent);
+}
+
+.button-link:active {
+  background: var(--accent-hover);
+}
+
+@media (hover: hover) {
+  .button-link:hover {
+    background: var(--accent-hover);
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .button-link:active {
+    transform: scale(0.97);
+  }
 }
 
 /* Stopka */
@@ -612,6 +819,12 @@ button {
   padding-block: 1.25rem;
 }
 
+.footer-name {
+  font-family: var(--font-brand);
+  font-weight: 800;
+  letter-spacing: -0.01em;
+}
+
 .footer-paws {
   display: var(--cat-display);
   flex: none;
@@ -620,11 +833,180 @@ button {
   color: var(--border-strong);
 }
 
+/*
+ * Kocie akcenty. Wszystkie mają display: var(--cat-display), czyli widać je
+ * tylko w trybie cute (jasnym i ciemnym).
+ */
+
+/* Kot wyglądający zza pierwszej karty na stronie głównej. */
+[data-cute='true'] .has-cat {
+  padding-top: 0.5rem;
+}
+
+.card-cat {
+  --cat-width: 6.25rem;
+  display: var(--cat-display);
+  position: absolute;
+  right: 1.5rem;
+  /* Krawędź karty wypada na y=40 z 50 jednostek wysokości rysunku. */
+  bottom: calc(100% - var(--cat-width) * 10 / 120 - 1px);
+  z-index: 1;
+  width: var(--cat-width);
+  height: auto;
+  pointer-events: none;
+}
+
+.cat-peek-head {
+  transition: transform 0.25s var(--ease-spring);
+}
+
+.cat-peek-eyes {
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+/* Kot śpiący na górnej krawędzi listy notatek. Krawędź wypada na y=36 z 46 jednostek. */
+[data-cute='true'] .note-list-wrap {
+  margin-top: 2.5rem;
+}
+
+.list-cat {
+  --cat-width: 6.5rem;
+  display: var(--cat-display);
+  position: absolute;
+  right: 1.75rem;
+  bottom: calc(100% - var(--cat-width) * 10 / 120 - 1px);
+  z-index: 1;
+  width: var(--cat-width);
+  height: auto;
+  pointer-events: none;
+}
+
+.cat-sleep-body {
+  transform-box: view-box;
+  transform-origin: 60px 36px;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  @media (hover: hover) {
+    .cat-peek-head {
+      transform: translateY(5px);
+    }
+
+    .subject-item:hover .cat-peek-head {
+      transform: translateY(0);
+    }
+
+    .card-cat {
+      transition: transform var(--duration) var(--ease-out);
+    }
+
+    .subject-item:hover .card-cat {
+      transform: translateY(-2px);
+    }
+  }
+
+  .cat-peek-eyes {
+    animation: cat-blink 6.5s 1.5s infinite;
+  }
+
+  .cat-sleep-body {
+    animation: cat-breathe 4.2s ease-in-out infinite;
+  }
+}
+
+@keyframes cat-blink {
+  0%,
+  94%,
+  100% {
+    transform: scaleY(1);
+  }
+
+  96.5% {
+    transform: scaleY(0.12);
+  }
+}
+
+@keyframes cat-breathe {
+  0%,
+  100% {
+    transform: scaleY(1);
+  }
+
+  50% {
+    transform: scaleY(1.035);
+  }
+}
+
+/*
+ * Przejścia między stronami (View Transitions). Przeglądarki bez wsparcia
+ * po prostu przechodzą od razu. Zmiana motywu to krótkie przenikanie
+ * (klasa is-theme-switching ustawiana w ThemeSwitch.astro).
+ */
+
+@media (prefers-reduced-motion: no-preference) {
+  @view-transition {
+    navigation: auto;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  .site-header {
+    view-transition-name: site-header;
+  }
+
+  /* Nagłówek stoi w miejscu, animuje się tylko reszta strony. */
+  ::view-transition-group(site-header) {
+    animation: none;
+  }
+
+  ::view-transition-old(root) {
+    animation: page-out 0.1s ease-in both;
+  }
+
+  ::view-transition-new(root) {
+    animation: page-in 0.24s var(--ease-out) 0.06s both;
+  }
+
+  .is-theme-switching::view-transition-old(root),
+  .is-theme-switching::view-transition-old(site-header) {
+    animation: page-out 0.22s ease both;
+  }
+
+  .is-theme-switching::view-transition-new(root),
+  .is-theme-switching::view-transition-new(site-header) {
+    animation: theme-in 0.22s ease both;
+  }
+}
+
+@keyframes page-out {
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes page-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+
+@keyframes theme-in {
+  from {
+    opacity: 0;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
   *::after {
     transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
     scroll-behavior: auto !important;
   }
 }
@@ -638,7 +1020,9 @@ button {
   .note-aside,
   .note-pager,
   .code-copy,
-  .heading-anchor {
+  .heading-anchor,
+  .list-cat,
+  .card-cat {
     display: none !important;
   }
 

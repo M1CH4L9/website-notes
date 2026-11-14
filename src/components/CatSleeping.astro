@@ -1,0 +1,53 @@
+---
+/*
+ * Kot śpiący na krawędzi karty. Krawędź wypada na y=36: powyżej leży kot,
+ * poniżej zwisa tylko ogon.
+ * Kolory: --cat-fur, --cat-line, --cat-pink (src/styles/tokens.css).
+ */
+interface Props {
+  class?: string;
+}
+const { class: className } = Astro.props;
+---
+
+<svg class={className} viewBox="0 0 120 46" aria-hidden="true" focusable="false">
+  <g fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M91 31c9 0 12 6 8 12" stroke="var(--cat-line)" stroke-width="9"></path>
+    <path d="M91 31c9 0 12 6 8 12" stroke="var(--cat-fur)" stroke-width="4.5"></path>
+  </g>
+  <g class="cat-sleep-body">
+    <path
+      d="M36 36c-3-13 8-22.5 27-22.5S98 23 96 36z"
+      fill="var(--cat-fur)"
+      stroke="var(--cat-line)"
+      stroke-width="2.5"
+      stroke-linejoin="round"></path>
+    <path d="M70 21c5 1 9 4 11 8" fill="none" stroke="var(--cat-line)" stroke-width="1.5" stroke-linecap="round" opacity=".45"></path>
+  </g>
+  <g transform="translate(2.4 3.2) scale(.62)">
+    <path
+      d="M39.5 31 36.5 9.5 52 18.5c5.2-1.5 10.8-1.5 16 0l15.5-9L80.5 31c3 13-6.5 22.5-20.5 22.5S36.5 44 39.5 31z"
+      fill="var(--cat-fur)"
+      stroke="var(--cat-line)"
+      stroke-width="4"
+      stroke-linejoin="round"></path>
+    <path d="M41.5 16.5 43 26l6.5-5.5z" fill="var(--cat-pink)"></path>
+    <path d="M78.5 16.5 77 26l-6.5-5.5z" fill="var(--cat-pink)"></path>
+    <ellipse cx="45.5" cy="42" rx="4.2" ry="2.6" fill="var(--cat-pink)" opacity=".55"></ellipse>
+    <ellipse cx="74.5" cy="42" rx="4.2" ry="2.6" fill="var(--cat-pink)" opacity=".55"></ellipse>
+    <path
+      d="M47.5 34.5c1.7 2.4 5.3 2.4 7 0M65.5 34.5c1.7 2.4 5.3 2.4 7 0"
+      fill="none"
+      stroke="var(--cat-line)"
+      stroke-width="2.8"
+      stroke-linecap="round"></path>
+    <path d="M57.8 40.8h4.4L60 43.4z" fill="var(--cat-line)" stroke="var(--cat-line)" stroke-width="1" stroke-linejoin="round"></path>
+  </g>
+  <path
+    d="M58 36c0-3.4 2.2-5.4 5-5.4s5 2 5 5.4"
+    fill="var(--cat-fur)"
+    stroke="var(--cat-line)"
+    stroke-width="2.3"
+    stroke-linecap="round"
+    stroke-linejoin="round"></path>
+</svg>
