@@ -1,0 +1,95 @@
+---
+import 'katex/dist/katex.min.css';
+import '@fontsource-variable/jetbrains-mono/wght.css';
+import '../../../styles/prose.css';
+
+import type { GetStaticPaths } from 'astro';
+import { render } from 'astro:content';
+import Breadcrumbs from '../../../components/Breadcrumbs.astro';
+import NoteScripts from '../../../components/NoteScripts.astro';
+import Toc from '../../../components/Toc.astro';
+import Base from '../../../layouts/Base.astro';
+import { formatDate, isoDate } from '../../../lib/format';
+import { getSubjects, type Note, type Subject } from '../../../lib/notes';
+
+export const getStaticPaths = (async () => {
+  const subjects = await getSubjects();
+  return subjects.flatMap((subject) =>
+    subject.notes.map((note, index) => ({
+      params: { subject: subject.slug, note: note.slug },
+      props: {
+        subject,
+        note,
+        previous: subject.notes[index - 1],
+        next: subject.notes[index + 1],
+      },
+    })),
+  );
+}) satisfies GetStaticPaths;
+
+interface Props {
+  subject: Subject;
+  note: Note;
+  previous?: Note;
+  next?: Note;
+}
+
+const { subject, note, previous, next } = Astro.props;
+const { Content, headings } = await render(note.entry);
+---
+
+<Base title={`${note.title} · ${subject.title}`} description={note.description}>
+  <Breadcrumbs
+    items={[
+      { label: 'Przedmioty', href: '/' },
+      { label: subject.title, href: subject.url },
+    ]}
+  />
+
+  <div class="note-layout">
+    <article class="note-main">
+      <header class="note-head">
+        <h1 class="page-title">{note.title}</h1>
+        {note.description && <p class="page-lead">{note.description}</p>}
+        {
+          note.updated && (
+            <p class="page-meta">
+              Aktualizacja: <time datetime={isoDate(note.updated)}>{formatDate(note.updated)}</time>
+            </p>
+          )
+        }
+      </header>
+
+      <Toc headings={headings} variant="mobile" />
+
+      <div class="prose">
+        <Content />
+      </div>
+
+      {
+        (previous || next) && (
+          <nav class="note-pager" aria-label="Sąsiednie notatki">
+            {previous && (
+              <a class="pager-link is-previous" href={previous.url} rel="prev">
+                <span class="pager-label">Poprzednia</span>
+                <span class="pager-title">{previous.title}</span>
+              </a>
+            )}
+            {next && (
+              <a class="pager-link is-next" href={next.url} rel="next">
+                <span class="pager-label">Następna</span>
+                <span class="pager-title">{next.title}</span>
+              </a>
+            )}
+          </nav>
+        )
+      }
+    </article>
+
+    <aside class="note-aside">
+      <Toc headings={headings} variant="desktop" />
+    </aside>
+  </div>
+
+  <NoteScripts />
+</Base>

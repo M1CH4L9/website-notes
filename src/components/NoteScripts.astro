@@ -1,0 +1,94 @@
+---
+/* Skrypty strony notatki: kopiowanie kodu, zamykanie spisu treści na telefonie, aktywna sekcja. */
+---
+
+<script>
+  async function copyText(value: string): Promise<boolean> {
+    try {
+      await navigator.clipboard.writeText(value);
+      return true;
+    } catch {
+      // Starsze przeglądarki i strony bez HTTPS.
+      const area = document.createElement('textarea');
+      area.value = value;
+      area.setAttribute('readonly', '');
+      area.style.position = 'fixed';
+      area.style.opacity = '0';
+      document.body.append(area);
+      area.select();
+      let ok = false;
+      try {
+        ok = document.execCommand('copy');
+      } catch {
+        ok = false;
+      }
+      area.remove();
+      return ok;
+    }
+  }
+
+  const timers = new WeakMap<HTMLElement, number>();
+
+  document.addEventListener('click', async (event) => {
+    const button = (event.target as HTMLElement).closest<HTMLButtonElement>('[data-code-copy]');
+    if (!button) return;
+    const code = button.closest('.code-block')?.querySelector('pre code');
+    const label = button.querySelector('.code-copy-label');
+    if (!code || !label) return;
+
+    const ok = await copyText(code.textContent ?? '');
+    button.dataset.state = ok ? 'copied' : 'failed';
+    label.textContent = ok ? 'Skopiowano' : 'Nie udało się';
+
+    window.clearTimeout(timers.get(button));
+    timers.set(
+      button,
+      window.setTimeout(() => {
+        delete button.dataset.state;
+        label.textContent = 'Kopiuj';
+      }, 1800),
+    );
+  });
+
+  // Po wybraniu sekcji na telefonie spis się zwija, żeby nie zasłaniał treści.
+  const mobileToc = document.querySelector<HTMLDetailsElement>('.toc-mobile');
+  mobileToc?.addEventListener('click', (event) => {
+    if ((event.target as HTMLElement).closest('a')) mobileToc.open = false;
+  });
+
+  // Podświetlenie bieżącej sekcji w spisie treści na komputerze.
+  const links = [...document.querySelectorAll<HTMLAnchorElement>('[data-toc-link]')];
+  const sections = links
+    .map((link) => document.getElementById(decodeURIComponent(link.hash.slice(1))))
+    .filter((heading): heading is HTMLElement => heading !== null);
+
+  if (sections.length > 0) {
+    let ticking = false;
+
+    const update = () => {
+      ticking = false;
+      const line = 96;
+      let current = sections[0];
+      for (const section of sections) {
+        if (section.getBoundingClientRect().top <= line) current = section;
+        else break;
+      }
+      const atBottom = window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 4;
+      if (atBottom) current = sections[sections.length - 1];
+      for (const link of links) {
+        if (decodeURIComponent(link.hash.slice(1)) === current.id) link.setAttribute('aria-current', 'true');
+        else link.removeAttribute('aria-current');
+      }
+    };
+
+    const schedule = () => {
+      if (ticking) return;
+      ticking = true;
+      window.requestAnimationFrame(update);
+    };
+
+    window.addEventListener('scroll', schedule, { passive: true });
+    window.addEventListener('resize', schedule, { passive: true });
+    update();
+  }
+</script>

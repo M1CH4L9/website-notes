@@ -1,0 +1,49 @@
+---
+import type { MarkdownHeading } from 'astro';
+
+interface Props {
+  headings: MarkdownHeading[];
+  variant: 'mobile' | 'desktop';
+}
+
+const { headings, variant } = Astro.props;
+const items = headings.filter((heading) => heading.depth === 2 || heading.depth === 3);
+---
+
+{
+  items.length > 0 && variant === 'mobile' && (
+    <details class="toc-mobile">
+      <summary>Spis treści</summary>
+      <nav aria-label="Spis treści">
+        <ol class="toc-list">
+          {items.map((item) => (
+            <li>
+              <a class="toc-link" href={`#${item.slug}`} data-depth={item.depth}>
+                {item.text}
+              </a>
+            </li>
+          ))}
+        </ol>
+      </nav>
+    </details>
+  )
+}
+
+{
+  items.length > 0 && variant === 'desktop' && (
+    <nav class="toc-desktop" aria-labelledby="toc-heading">
+      <p class="toc-heading" id="toc-heading">
+        Spis treści
+      </p>
+      <ol class="toc-list">
+        {items.map((item) => (
+          <li>
+            <a class="toc-link" href={`#${item.slug}`} data-depth={item.depth} data-toc-link>
+              {item.text}
+            </a>
+          </li>
+        ))}
+      </ol>
+    </nav>
+  )
+}

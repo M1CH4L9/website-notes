@@ -1,0 +1,159 @@
+/*
+ * Trzy motywy: cute (domyślny), light, dark. Wybór siedzi w atrybucie data-theme na <html>.
+ * Komponenty korzystają wyłącznie z poniższych zmiennych, więc nowy motyw to nowy blok zmiennych.
+ */
+
+:root {
+  --font-body: 'Figtree Variable', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-mono: 'JetBrains Mono Variable', ui-monospace, 'SF Mono', 'Cascadia Code', Menlo, Consolas,
+    monospace;
+
+  --page-width: 72rem;
+  --page-gutter: 1rem;
+  --prose-width: 46rem;
+}
+
+@media (min-width: 40rem) {
+  :root {
+    --page-gutter: 1.5rem;
+  }
+}
+
+@media (min-width: 64rem) {
+  :root {
+    --page-gutter: 2rem;
+  }
+}
+
+:root,
+[data-theme='cute'] {
+  color-scheme: light;
+
+  --font-heading: 'Nunito Variable', var(--font-body);
+  --heading-weight: 800;
+  --heading-tracking: -0.01em;
+  --radius-s: 8px;
+  --radius-m: 14px;
+  --radius-l: 20px;
+
+  --bg: #fff5f8;
+  --surface: #ffffff;
+  --surface-sunken: #ffeaf1;
+  --border: #f5cfdc;
+  --border-strong: #e7a6bf;
+  --text: #3d2230;
+  --text-muted: #74505e;
+  --accent: #bd2565;
+  --accent-hover: #9c1c52;
+  --accent-soft: #ffe1eb;
+  --on-accent: #ffffff;
+  --focus-ring: #bd2565;
+  --selection: #ffc9dc;
+  --shadow-card: 0 1px 2px rgb(140 40 85 / 0.05), 0 10px 24px -14px rgb(140 40 85 / 0.22);
+  --shadow-card-hover: 0 2px 4px rgb(140 40 85 / 0.06), 0 16px 32px -14px rgb(140 40 85 / 0.3);
+
+  --code-bg: #fffafc;
+  --code-header-bg: #ffeef4;
+  --code-border: #f5cfdc;
+  --code-inline-bg: #ffe6ee;
+  --code-inline-text: #8a1f4d;
+
+  --callout-note: #2565c2;
+  --callout-tip: #177a55;
+  --callout-important: #8046cf;
+  --callout-warning: #9a5a00;
+  --callout-caution: #cc2b45;
+
+  --cat-fur: #ffffff;
+  --cat-line: #5b3145;
+  --cat-pink: #f79bbd;
+  --cat-display: block;
+}
+
+[data-theme='light'] {
+  color-scheme: light;
+
+  --font-heading: var(--font-body);
+  --heading-weight: 700;
+  --heading-tracking: -0.015em;
+  --radius-s: 6px;
+  --radius-m: 8px;
+  --radius-l: 10px;
+
+  --bg: #ffffff;
+  --surface: #ffffff;
+  --surface-sunken: #f6f8fa;
+  --border: #d1d9e0;
+  --border-strong: #a7b1bb;
+  --text: #1f2328;
+  --text-muted: #59636e;
+  --accent: #0969da;
+  --accent-hover: #0550ae;
+  --accent-soft: #e7f2ff;
+  --on-accent: #ffffff;
+  --focus-ring: #0969da;
+  --selection: #b6daff;
+  --shadow-card: 0 1px 2px rgb(31 35 40 / 0.04);
+  --shadow-card-hover: 0 1px 2px rgb(31 35 40 / 0.05), 0 8px 20px -12px rgb(31 35 40 / 0.2);
+
+  --code-bg: #f6f8fa;
+  --code-header-bg: #eef1f4;
+  --code-border: #d1d9e0;
+  --code-inline-bg: #eff1f3;
+  --code-inline-text: #1f2328;
+
+  --callout-note: #0969da;
+  --callout-tip: #1a7f37;
+  --callout-important: #8250df;
+  --callout-warning: #8f5f00;
+  --callout-caution: #cf222e;
+
+  --cat-fur: #ffffff;
+  --cat-line: #1f2328;
+  --cat-pink: #d1d9e0;
+  --cat-display: none;
+}
+
+[data-theme='dark'] {
+  color-scheme: dark;
+
+  --font-heading: var(--font-body);
+  --heading-weight: 700;
+  --heading-tracking: -0.015em;
+  --radius-s: 6px;
+  --radius-m: 8px;
+  --radius-l: 10px;
+
+  --bg: #0d1117;
+  --surface: #151b23;
+  --surface-sunken: #1a212b;
+  --border: #303841;
+  --border-strong: #4d5661;
+  --text: #e6edf3;
+  --text-muted: #9aa4af;
+  --accent: #58a6ff;
+  --accent-hover: #8cc2ff;
+  --accent-soft: #14273f;
+  --on-accent: #0d1117;
+  --focus-ring: #58a6ff;
+  --selection: #1f4f8a;
+  --shadow-card: none;
+  --shadow-card-hover: 0 0 0 1px var(--border-strong);
+
+  --code-bg: #151b23;
+  --code-header-bg: #1c242e;
+  --code-border: #303841;
+  --code-inline-bg: #232b35;
+  --code-inline-text: #e6edf3;
+
+  --callout-note: #58a6ff;
+  --callout-tip: #3fb950;
+  --callout-important: #ab7df8;
+  --callout-warning: #d29922;
+  --callout-caution: #f85149;
+
+  --cat-fur: #151b23;
+  --cat-line: #e6edf3;
+  --cat-pink: #4d5661;
+  --cat-display: none;
+}

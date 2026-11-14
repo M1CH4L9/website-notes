@@ -1,0 +1,19 @@
+---
+/* Znak strony: głowa kota. Kolor bierze z `color` rodzica. */
+interface Props {
+  class?: string;
+}
+const { class: className } = Astro.props;
+---
+
+<svg class={className} viewBox="0 0 32 32" aria-hidden="true" focusable="false">
+  <path
+    d="M6.2 5.2 7.4 14.2C6 21.4 10.3 27 16 27s10-5.6 8.6-12.8L25.8 5.2 19.6 9.6c-2.3-.7-4.9-.7-7.2 0z"
+    fill="currentColor"
+    stroke="currentColor"
+    stroke-width="2.2"
+    stroke-linejoin="round"></path>
+  <ellipse cx="12.1" cy="17.4" rx="1.5" ry="2.1" fill="var(--surface)"></ellipse>
+  <ellipse cx="19.9" cy="17.4" rx="1.5" ry="2.1" fill="var(--surface)"></ellipse>
+  <path d="M14.7 21.3h2.6L16 22.9z" fill="var(--surface)" stroke="var(--surface)" stroke-width=".6" stroke-linejoin="round"></path>
+</svg>

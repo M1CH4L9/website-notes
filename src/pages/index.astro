@@ -1,0 +1,45 @@
+---
+import Arrow from '../components/Arrow.astro';
+import CatPeek from '../components/CatPeek.astro';
+import CatSitting from '../components/CatSitting.astro';
+import Base from '../layouts/Base.astro';
+import { countNotes } from '../lib/format';
+import { getSubjects } from '../lib/notes';
+
+const subjects = await getSubjects();
+---
+
+<Base>
+  <header class="page-head">
+    <h1 class="page-title">Przedmioty</h1>
+    <p class="page-lead">Wybierz przedmiot, żeby przejść do notatek.</p>
+  </header>
+
+  {
+    subjects.length > 0 ? (
+      <div class="has-cat">
+        <ul class="subject-grid">
+          {subjects.map((subject, index) => (
+            <li class="subject-item">
+              {index === 0 && <CatPeek class="card-cat" />}
+              <a class="subject-card" href={subject.url}>
+                <span class="subject-code">{subject.title}</span>
+                {subject.fullName && <span class="subject-name">{subject.fullName}</span>}
+                <span class="subject-foot">
+                  <span>{countNotes(subject.notes.length)}</span>
+                  <Arrow class="subject-arrow" />
+                </span>
+              </a>
+            </li>
+          ))}
+        </ul>
+      </div>
+    ) : (
+      <div class="empty">
+        <CatSitting class="empty-cat" />
+        <p class="empty-title">Nie ma jeszcze żadnego przedmiotu</p>
+        <p>Pierwszy pojawi się tutaj po dodaniu katalogu w notatki/.</p>
+      </div>
+    )
+  }
+</Base>

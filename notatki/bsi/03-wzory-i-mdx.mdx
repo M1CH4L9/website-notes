@@ -1,0 +1,66 @@
+---
+title: Wzory i elementy MDX
+description: Przykładowa notatka ze wzorami matematycznymi oraz elementami, które daje format MDX.
+updated: 2026-11-10
+---
+
+Notatka przykładowa w formacie MDX. Wzory zapisuje się w składni LaTeX: w linii między pojedynczymi znakami dolara, w osobnym bloku między podwójnymi.
+
+## Wzory w tekście
+
+W RSA wybieramy dwie duże liczby pierwsze $p$ i $q$, liczymy $n = pq$ oraz $\varphi(n) = (p-1)(q-1)$. Wykładnik publiczny $e$ musi spełniać $\gcd(e, \varphi(n)) = 1$.
+
+## Wzory w bloku
+
+Szyfrowanie i deszyfrowanie:
+
+$$
+c \equiv m^{e} \pmod{n}, \qquad m \equiv c^{d} \pmod{n}, \qquad ed \equiv 1 \pmod{\varphi(n)}
+$$
+
+Entropia hasła o długości $L$ nad alfabetem $A$:
+
+$$
+H = L \cdot \log_2 |A|
+$$
+
+Prawdopodobieństwo kolizji dla $k$ losowych skrótów o długości $b$ bitów (paradoks urodzin):
+
+$$
+P(k) = 1 - \prod_{i=1}^{k-1}\left(1 - \frac{i}{2^{b}}\right) \approx 1 - \exp\left(-\frac{k(k-1)}{2^{b+1}}\right)
+$$
+
+Długi wzór przewija się w poziomie:
+
+$$
+\mathrm{HMAC}(K, m) = H\Bigl(\bigl(K' \oplus \mathrm{opad}\bigr) \parallel H\bigl(\bigl(K' \oplus \mathrm{ipad}\bigr) \parallel m\bigr)\Bigr), \qquad K' = \begin{cases} H(K), & |K| > B \\ K, & |K| \le B \end{cases}
+$$
+
+## Wzory w tabeli
+
+| Wielkość | Wzór | Przykład |
+| :-- | :-- | :-- |
+| Liczba kluczy | $2^{k}$ | $2^{128} \approx 3{,}4 \cdot 10^{38}$ |
+| Średni czas ataku siłowego | $\frac{2^{k-1}}{v}$ | $v = 10^{12}$ prób na sekundę |
+| Entropia hasła | $L \log_2 \lvert A \rvert$ | $12 \cdot \log_2 62 \approx 71{,}5$ bita |
+
+## Elementy MDX
+
+W pliku `.mdx` można używać zwykłego HTML i komponentów. Rozwijana sekcja:
+
+<details>
+  <summary>Rozwiązanie zadania</summary>
+
+  Dla $p = 61$, $q = 53$ mamy $n = 3233$ i $\varphi(n) = 3120$. Dla $e = 17$ wychodzi $d = 2753$.
+
+  ```python
+  p, q, e = 61, 53, 17
+  d = pow(e, -1, (p - 1) * (q - 1))
+  assert d == 2753
+  ```
+</details>
+
+Wyróżnienie fragmentu: <mark>to zdanie jest zaznaczone</mark>.
+
+> [!NOTE]
+> Wzory korzystają z biblioteki KaTeX i wyglądają tak samo w każdym motywie.

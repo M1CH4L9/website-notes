@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 240" width="760" height="240" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="15">
+  <rect width="760" height="240" rx="12" fill="#ffffff"/>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M0 0 10 5 0 10z" fill="#5b6570"/>
+    </marker>
+  </defs>
+  <g fill="none" stroke="#5b6570" stroke-width="1.6" marker-end="url(#arrow)">
+    <path d="M136 80h32"/>
+    <path d="M288 80h32"/>
+    <path d="M440 80h32"/>
+    <path d="M592 80h32"/>
+    <path d="M320 180h-80a12 12 0 0 1-12-12v-56"/>
+    <path d="M440 180h80a12 12 0 0 0 12-12v-56"/>
+  </g>
+  <g fill="#f3f5f7" stroke="#aab3bd" stroke-width="1.4">
+    <rect x="18" y="52" width="116" height="56" rx="10"/>
+    <rect x="322" y="52" width="116" height="56" rx="10"/>
+    <rect x="626" y="52" width="116" height="56" rx="10"/>
+  </g>
+  <g fill="#fde8ef" stroke="#d6397b" stroke-width="1.6">
+    <rect x="170" y="52" width="116" height="56" rx="10"/>
+    <rect x="474" y="52" width="116" height="56" rx="10"/>
+    <rect x="320" y="160" width="120" height="40" rx="20"/>
+  </g>
+  <g fill="#1f2328" text-anchor="middle">
+    <text x="76" y="85">tekst jawny</text>
+    <text x="228" y="85" font-weight="600">szyfrowanie</text>
+    <text x="380" y="85">szyfrogram</text>
+    <text x="532" y="85" font-weight="600">deszyfrowanie</text>
+    <text x="684" y="85">tekst jawny</text>
+    <text x="380" y="185" font-weight="600">klucz K</text>
+  </g>
+  <text x="380" y="224" text-anchor="middle" fill="#5b6570" font-size="13">ten sam klucz po obu stronach</text>
+</svg>
