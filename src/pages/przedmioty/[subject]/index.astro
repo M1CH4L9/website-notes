@@ -1,26 +1,17 @@
 ---
-import type { GetStaticPaths } from 'astro';
 import Arrow from '../../../components/Arrow.astro';
 import Breadcrumbs from '../../../components/Breadcrumbs.astro';
 import CatSitting from '../../../components/CatSitting.astro';
 import CatSleeping from '../../../components/CatSleeping.astro';
 import Base from '../../../layouts/Base.astro';
 import { formatDate, isoDate } from '../../../lib/format';
-import { getSubjects, type Subject } from '../../../lib/notes';
+import { getSubjects } from '../../../lib/notes';
 
-export const getStaticPaths = (async () => {
-  const subjects = await getSubjects();
-  return subjects.map((subject) => ({
-    params: { subject: subject.slug },
-    props: { subject },
-  }));
-}) satisfies GetStaticPaths;
-
-interface Props {
-  subject: Subject;
+const subjects = await getSubjects();
+const subject = subjects.find((item) => item.slug === Astro.params.subject);
+if (!subject) {
+  return Astro.redirect('/404');
 }
-
-const { subject } = Astro.props;
 const heading = subject.fullName ?? subject.title;
 ---
 

@@ -3,7 +3,6 @@ import 'katex/dist/katex.min.css';
 import '@fontsource-variable/jetbrains-mono/wght.css';
 import '../../../styles/prose.css';
 
-import type { GetStaticPaths } from 'astro';
 import { render } from 'astro:content';
 import Breadcrumbs from '../../../components/Breadcrumbs.astro';
 import CatPeek from '../../../components/CatPeek.astro';
@@ -11,31 +10,21 @@ import NoteScripts from '../../../components/NoteScripts.astro';
 import Toc from '../../../components/Toc.astro';
 import Base from '../../../layouts/Base.astro';
 import { formatDate, isoDate } from '../../../lib/format';
-import { getSubjects, type Note, type Subject } from '../../../lib/notes';
+import { getSubjects } from '../../../lib/notes';
 
-export const getStaticPaths = (async () => {
-  const subjects = await getSubjects();
-  return subjects.flatMap((subject) =>
-    subject.notes.map((note, index) => ({
-      params: { subject: subject.slug, note: note.slug },
-      props: {
-        subject,
-        note,
-        previous: subject.notes[index - 1],
-        next: subject.notes[index + 1],
-      },
-    })),
-  );
-}) satisfies GetStaticPaths;
-
-interface Props {
-  subject: Subject;
-  note: Note;
-  previous?: Note;
-  next?: Note;
+const subjects = await getSubjects();
+const subject = subjects.find((item) => item.slug === Astro.params.subject);
+if (!subject) {
+  return Astro.redirect('/404');
 }
 
-const { subject, note, previous, next } = Astro.props;
+const index = subject.notes.findIndex((item) => item.slug === Astro.params.note);
+const note = subject.notes[index];
+if (!note) {
+  return Astro.redirect('/404');
+}
+const previous = subject.notes[index - 1];
+const next = subject.notes[index + 1];
 const { Content, headings } = await render(note.entry);
 ---
 
@@ -59,6 +48,11 @@ const { Content, headings } = await render(note.entry);
             </p>
           )
         }
+        <p class="page-meta">
+          <a href={`/moje/z-publicznej?subject=${subject.slug}&note=${note.slug}`}>
+            Skopiuj do moich notatek
+          </a>
+        </p>
       </header>
 
       <Toc headings={headings} variant="mobile" />

@@ -1,0 +1,42 @@
+---
+import Base from '../../layouts/Base.astro';
+import CsrfField from '../../components/account/CsrfField.astro';
+import { getCollection } from 'astro:content';
+
+if (!Astro.locals.user) {
+  return Astro.redirect(
+    '/logowanie?next=' + encodeURIComponent(Astro.url.pathname + Astro.url.search),
+  );
+}
+
+const subject = Astro.url.searchParams.get('subject') || '';
+const noteSlug = Astro.url.searchParams.get('note') || '';
+const notes = await getCollection('notes');
+const entry = notes.find((n) => n.id === `${subject}/${noteSlug}`);
+
+if (!entry) {
+  return Astro.redirect('/moje/?error=' + encodeURIComponent('Nie znaleziono notatki publicznej.'));
+}
+
+const sourcePath = `/przedmioty/${subject}/${noteSlug}/`;
+---
+
+<Base title="Kopiuj notatkę" description="Skopiuj publiczną notatkę do swojej sekcji.">
+  <div class="auth-panel" style="width:min(100%,32rem);">
+    <h1 class="page-title">Kopiuj do moich</h1>
+    <p class="page-lead">
+      Utworzy prywatną kopię <strong>{entry.data.title}</strong> w Twojej sekcji. Możesz ją potem edytować.
+    </p>
+    <p class="hint">Źródło: <a href={sourcePath}>{sourcePath}</a></p>
+
+    <form class="auth-form" method="post" action="/api/notes/duplicate-public">
+      <CsrfField />
+      <input type="hidden" name="subject" value={subject} />
+      <input type="hidden" name="note" value={noteSlug} />
+      <div class="form-actions">
+        <button class="button" type="submit">Skopiuj</button>
+        <a class="button button-secondary" href={sourcePath}>Anuluj</a>
+      </div>
+    </form>
+  </div>
+</Base>

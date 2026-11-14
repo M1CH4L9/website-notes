@@ -4,6 +4,7 @@ import '@fontsource-variable/figtree/wght-italic.css';
 import '@fontsource-variable/nunito/wght.css';
 import '../styles/tokens.css';
 import '../styles/base.css';
+import '../styles/account.css';
 
 import figtreeLatin from '@fontsource-variable/figtree/files/figtree-latin-wght-normal.woff2?url';
 import figtreeLatinExt from '@fontsource-variable/figtree/files/figtree-latin-ext-wght-normal.woff2?url';
@@ -23,6 +24,7 @@ interface Props {
 const { title, description = site.description } = Astro.props;
 const pageTitle = title ? `${title} · ${site.title}` : site.title;
 const canonical = Astro.site ? new URL(Astro.url.pathname, Astro.site).href : undefined;
+const user = Astro.locals.user;
 ---
 
 <!doctype html>
@@ -56,8 +58,29 @@ const canonical = Astro.site ? new URL(Astro.url.pathname, Astro.site).href : un
           <span class="brand-name">{site.name}<span class="brand-dot">.</span></span>
         </a>
         <div class="site-header-actions">
-          {/* Miejsce na kolejne elementy nagłówka (np. konto): dodawaj je tutaj, za ThemeSwitch. */}
           <ThemeSwitch />
+          {
+            user ? (
+              <>
+                <a class="header-link" href="/moje/">
+                  Moje
+                </a>
+                {user.is_admin && (
+                  <a class="header-link" href="/admin/prosby/">
+                    Prośby
+                  </a>
+                )}
+                <form method="post" action="/api/auth/logout" class="header-logout">
+                  {Astro.locals.csrf && <input type="hidden" name="csrf" value={Astro.locals.csrf} />}
+                  <button type="submit" class="header-link header-link-button">Wyloguj</button>
+                </form>
+              </>
+            ) : (
+              <a class="header-link-accent" href="/logowanie">
+                Zaloguj
+              </a>
+            )
+          }
         </div>
       </div>
     </header>

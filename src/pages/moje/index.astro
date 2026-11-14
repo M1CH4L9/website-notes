@@ -1,0 +1,82 @@
+---
+import Base from '../../layouts/Base.astro';
+import { formatDate, isoDate } from '../../lib/format';
+import { listNotesForUser } from '../../lib/server/user-notes';
+import { listRequestsForUser } from '../../lib/server/publications';
+import { isDatabaseConfigured } from '../../lib/server/env';
+
+if (!Astro.locals.user) {
+  return Astro.redirect('/logowanie?next=' + encodeURIComponent('/moje/'));
+}
+
+const user = Astro.locals.user;
+const error = Astro.url.searchParams.get('error');
+const ok = Astro.url.searchParams.get('ok');
+
+const notes = isDatabaseConfigured() ? await listNotesForUser(user.id) : [];
+const requests = isDatabaseConfigured() ? await listRequestsForUser(user.id) : [];
+const pendingByNote = new Map(
+  requests.filter((r) => r.status === 'pending').map((r) => [r.note_id, r]),
+);
+---
+
+<Base title="Moje notatki" description="Twoja prywatna sekcja notatek.">
+  <header class="page-head">
+    <h1 class="page-title">Moje notatki</h1>
+    <p class="page-lead">
+      Zalogowano jako <strong>{user.username}</strong>
+      {user.is_admin && <span class="badge">admin</span>}
+    </p>
+  </header>
+
+  <div class="account-toolbar">
+    <nav class="account-nav" aria-label="Konto">
+      <a class="button" href="/moje/nowa/">Nowa notatka</a>
+      {user.is_admin && <a class="button button-secondary" href="/admin/prosby/">Prośby o publikację</a>}
+    </nav>
+  </div>
+
+  {error && <p class="form-error">{error}</p>}
+  {ok && <p class="form-ok">{ok}</p>}
+
+  {
+    notes.length === 0 ? (
+      <div class="empty">
+        <p class="empty-title">Nie masz jeszcze notatek</p>
+        <p>Napisz nową albo skopiuj którąś z publicznych (przycisk na stronie notatki).</p>
+      </div>
+    ) : (
+      <ul class="my-note-list">
+        {notes.map((note) => {
+          const pending = pendingByNote.get(note.id);
+          return (
+            <li class="my-note-list-item">
+              <a class="my-note-list-title" href={`/moje/${note.slug}/`}>
+                {note.title}
+              </a>
+              <div class="my-note-list-meta">
+                <span>
+                  Aktualizacja:{' '}
+                  <time datetime={isoDate(note.updated_at)}>{formatDate(note.updated_at)}</time>
+                </span>
+                {note.is_public ? (
+                  <span class="badge badge-public">publiczna</span>
+                ) : pending ? (
+                  <span class="badge badge-pending">czeka na akceptację</span>
+                ) : (
+                  <span class="badge">prywatna</span>
+                )}
+                <a href={`/moje/${note.slug}/edytuj/`}>Edytuj</a>
+                {note.is_public && (
+                  <a href={`/u/${user.username}/${note.slug}/`} target="_blank" rel="noopener">
+                    Podgląd publiczny
+                  </a>
+                )}
+              </div>
+            </li>
+          );
+        })}
+      </ul>
+    )
+  }
+</Base>
