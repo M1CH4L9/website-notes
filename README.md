@@ -27,8 +27,9 @@ npm run check
 
 | Ścieżka | Opis |
 | --- | --- |
-| `/logowanie`, `/rejestracja` | hasło albo GitHub OAuth |
-| `/moje/` | profil: lista własnych notatek |
+| `/logowanie`, `/rejestracja` | hasło albo GitHub OAuth (rejestracja: powtórzenie hasła) |
+| `/moje/` | lista własnych notatek |
+| `/profil/` | konto: dane, hasło, GitHub, motywy |
 | `/moje/nowa/`, `/moje/<slug>/`, `/moje/<slug>/edytuj/` | CRUD + live preview |
 | `/moje/z-publicznej?subject=&note=` | kopia publicznej notatki |
 | `/u/<nazwa>/<slug>/` | upubliczniona notatka użytkownika |
@@ -84,6 +85,8 @@ Dwa niezależne ustawienia na `<html>`:
 | Jasność | `data-theme` | `dark`, `light` | `dark` | `theme` |
 | Tryb cute | `data-cute` | `true`, `false` | `false` | `cute` (`1`/`0`) |
 
+Wybór trzyma się w `localStorage` i nie resetuje się przy nawigacji (`ClientRouter` / view transitions). Po zalogowaniu trafia też do kolumn `pref_theme` / `pref_cute` na koncie: lokalne → serwer przy pierwszym logowaniu bez zapisu; serwer → lokalne, gdy w przeglądarce nie ma jeszcze wpisu.
+
 Kolory i typografia wyłącznie przez zmienne w `src/styles/tokens.css`. UI kont korzysta z tych samych zmiennych (`src/styles/account.css`).
 
 ## Struktura (konta)
@@ -94,7 +97,8 @@ scripts/migrate.mjs       migracje przy buildzie
 src/lib/server/           db, sesje, hasła, OAuth, notatki, prośby
 src/markdown/user.mjs     render Markdowna z bazy
 src/pages/logowanie.astro
-src/pages/moje/           prywatna sekcja / profil
+src/pages/moje/           prywatne notatki
+src/pages/profil/         konto (dane, hasło)
 src/pages/admin/          prośby o publikację
 src/pages/u/              publiczne notatki użytkowników
 src/pages/api/            mutacje formularzy + podgląd Markdown

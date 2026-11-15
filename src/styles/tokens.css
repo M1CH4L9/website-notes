@@ -17,8 +17,11 @@
     monospace;
 
   --page-width: 74rem;
+  --page-width-wide: 96rem;
   --page-gutter: 1rem;
   --prose-width: 50rem;
+  --header-height: 3.5rem;
+  --footer-pad: 1.25rem;
 
   /* Logo ma stałe kolory, niezależne od motywu. */
   --brand: #d94a85;
@@ -34,6 +37,7 @@
 @media (min-width: 40rem) {
   :root {
     --page-gutter: 1.5rem;
+    --header-height: 4rem;
   }
 }
 

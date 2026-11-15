@@ -35,7 +35,11 @@ const ok = Astro.url.searchParams.get('ok');
   </header>
 
   <div class="account-toolbar">
-    <a class="button button-secondary" href="/moje/">Wróć do profilu</a>
+    <nav class="account-nav" aria-label="Konto">
+      <a class="button button-secondary" href="/moje/">Notatki</a>
+      <a class="button button-secondary" href="/profil/">Konto</a>
+      <a class="button" href="/admin/prosby/">Prośby</a>
+    </nav>
   </div>
 
   {error && <p class="form-error">{error}</p>}

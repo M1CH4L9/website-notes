@@ -2,7 +2,12 @@ import type { APIRoute } from 'astro';
 import { verifyPassword } from '../../../lib/server/password';
 import { hitRateLimit } from '../../../lib/server/rate-limit';
 import { createSession, setSessionCookie } from '../../../lib/server/sessions';
-import { findUserByUsername, normalizeUsername } from '../../../lib/server/users';
+import {
+  findUserByUsername,
+  normalizeThemePreference,
+  normalizeUsername,
+  updateUserPreferences,
+} from '../../../lib/server/users';
 import { isDatabaseConfigured } from '../../../lib/server/env';
 import { parseForm, readFormString, redirect } from '../../../lib/server/http';
 
@@ -37,6 +42,9 @@ export const POST: APIRoute = async (context) => {
   const username = normalizeUsername(readFormString(form, 'username'));
   const password = readFormString(form, 'password');
   const next = safeNext(readFormString(form, 'next'));
+  const localTheme = normalizeThemePreference(readFormString(form, 'theme'));
+  const localCuteRaw = readFormString(form, 'cute');
+  const hasLocalCute = localCuteRaw === '0' || localCuteRaw === '1';
 
   const user = await findUserByUsername(username);
   const ok =
@@ -44,6 +52,11 @@ export const POST: APIRoute = async (context) => {
 
   if (!user || !ok) {
     return redirect('/logowanie?error=' + encodeURIComponent('Nieprawidłowa nazwa lub hasło.'));
+  }
+
+  // Lokalne → serwer przy logowaniu, gdy konto jeszcze nie ma zapisanych preferencji.
+  if (user.pref_theme == null && localTheme) {
+    await updateUserPreferences(user.id, localTheme, hasLocalCute ? localCuteRaw === '1' : false);
   }
 
   const { token } = await createSession(user.id);

@@ -82,7 +82,25 @@
 }
 
 .toc-link[data-depth='3'] {
+  position: relative;
+  padding-left: 1.85rem;
+  font-size: 0.875rem;
+}
+
+.toc-link[data-depth='3']::before {
+  content: '·';
+  position: absolute;
+  left: 0.85rem;
+  color: var(--text-muted);
+  font-weight: 700;
+}
+
+.toc-mobile .toc-link[data-depth='3'] {
   padding-left: 1.6rem;
+}
+
+.toc-mobile .toc-link[data-depth='3']::before {
+  left: 0.55rem;
 }
 
 .toc-desktop {

@@ -76,6 +76,8 @@ type SessionUserRow = SessionRow & {
   github_id: string | null;
   github_login: string | null;
   is_admin: boolean;
+  pref_theme: 'dark' | 'light' | null;
+  pref_cute: boolean | null;
   created_at_user: Date;
 };
 
@@ -87,6 +89,7 @@ export async function getAuthFromCookies(cookies: AstroCookies): Promise<AuthCon
   const { rows } = await query<SessionUserRow>(
     `SELECT s.id, s.user_id, s.token_hash, s.csrf_secret, s.expires_at, s.created_at,
             u.username, u.password_hash, u.github_id, u.github_login, u.is_admin,
+            u.pref_theme, u.pref_cute,
             u.created_at AS created_at_user
      FROM sessions s
      JOIN users u ON u.id = s.user_id
@@ -118,6 +121,8 @@ export async function getAuthFromCookies(cookies: AstroCookies): Promise<AuthCon
     github_id: row.github_id,
     github_login: row.github_login,
     is_admin: row.is_admin,
+    pref_theme: row.pref_theme === 'light' || row.pref_theme === 'dark' ? row.pref_theme : null,
+    pref_cute: typeof row.pref_cute === 'boolean' ? row.pref_cute : null,
     created_at: row.created_at_user,
   };
 

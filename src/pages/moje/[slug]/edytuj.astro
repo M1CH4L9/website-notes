@@ -26,7 +26,7 @@ const inlineOk = ok && !toast ? ok : null;
 const { html } = await renderUserMarkdown(note.body);
 ---
 
-<Base title={`Edycja · ${note.title}`} description="Edytuj notatkę Markdown.">
+<Base title={`Edycja · ${note.title}`} description="Edytuj notatkę Markdown." wide>
   <header class="page-head">
     <h1 class="page-title">Edycja</h1>
     <p class="page-lead">{note.title}</p>

@@ -8,8 +8,16 @@ export type User = {
   github_id: string | null;
   github_login: string | null;
   is_admin: boolean;
+  pref_theme: 'dark' | 'light' | null;
+  pref_cute: boolean | null;
   created_at: Date;
 };
+
+export type ThemePreference = 'dark' | 'light';
+
+export function normalizeThemePreference(raw: string): ThemePreference | null {
+  return raw === 'dark' || raw === 'light' ? raw : null;
+}
 
 export function normalizeUsername(raw: string): string {
   return raw.trim().toLowerCase();
@@ -108,6 +116,33 @@ export async function linkGithubToUser(
      WHERE id = $1
      RETURNING *`,
     [userId, githubId, githubLogin, makeAdmin],
+  );
+  return rows[0];
+}
+
+export async function updateUserPreferences(
+  userId: string,
+  theme: ThemePreference,
+  cute: boolean,
+): Promise<User> {
+  const { rows } = await query<User>(
+    `UPDATE users
+     SET pref_theme = $2,
+         pref_cute = $3
+     WHERE id = $1
+     RETURNING *`,
+    [userId, theme, cute],
+  );
+  return rows[0];
+}
+
+export async function updateUserPassword(userId: string, passwordHash: string): Promise<User> {
+  const { rows } = await query<User>(
+    `UPDATE users
+     SET password_hash = $2
+     WHERE id = $1
+     RETURNING *`,
+    [userId, passwordHash],
   );
   return rows[0];
 }

@@ -5,6 +5,7 @@
  * Stan widoczny (pozycja suwaka, ikona słońca albo księżyca) wynika z atrybutów
  * data-theme i data-cute na <html>, które ustawia ThemeInit.astro, więc jest poprawny
  * przed uruchomieniem tego skryptu. Skrypt obsługuje kliknięcia, zapis i atrybuty ARIA.
+ * Po zalogowaniu dodatkowo wysyła preferencje na konto (best-effort).
  */
 ---
 
@@ -49,9 +50,10 @@
     'cute-light': '#ffffff',
   };
 
-  const root = document.documentElement;
-  const currentTheme = (): Theme => (root.dataset.theme === 'light' ? 'light' : 'dark');
-  const isCute = () => root.dataset.cute === 'true';
+  const root = () => document.documentElement;
+  const currentTheme = (): Theme => (root().dataset.theme === 'light' ? 'light' : 'dark');
+  const isCute = () => root().dataset.cute === 'true';
+  const isLoggedIn = () => document.body?.dataset.auth === '1';
 
   function save(key: string, value: string) {
     try {
@@ -59,6 +61,26 @@
     } catch {
       // Tryb prywatny lub zablokowany zapis: ustawienie działa do końca wizyty.
     }
+  }
+
+  function persistToAccount(theme: Theme, cute: boolean) {
+    if (!isLoggedIn()) return;
+    const csrf = document.querySelector<HTMLInputElement>('input[name="csrf"]')?.value
+      || document.body?.dataset.csrf
+      || '';
+    if (!csrf) return;
+    const body = new URLSearchParams({
+      csrf,
+      theme,
+      cute: cute ? '1' : '0',
+    });
+    void fetch('/api/auth/preferences', {
+      method: 'POST',
+      headers: { 'content-type': 'application/x-www-form-urlencoded', accept: 'application/json' },
+      body,
+      credentials: 'same-origin',
+      keepalive: true,
+    }).catch(() => {});
   }
 
   /** Uzgadnia atrybuty ARIA, podpowiedzi i kolor paska przeglądarki ze stanem na <html>. */
@@ -78,6 +100,15 @@
       ?.setAttribute('content', THEME_COLORS[(cute ? 'cute-' : '') + theme]);
   }
 
+  function applyFromStorage() {
+    try {
+      const savedTheme = localStorage.getItem('theme');
+      const savedCute = localStorage.getItem('cute');
+      if (savedTheme === 'light' || savedTheme === 'dark') root().dataset.theme = savedTheme;
+      if (savedCute === '1' || savedCute === '0') root().dataset.cute = String(savedCute === '1');
+    } catch {}
+  }
+
   /** Zmienia wygląd z płynnym przejściem tam, gdzie przeglądarka to potrafi. */
   function change(update: () => void) {
     const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -86,12 +117,12 @@
       sync();
       return;
     }
-    root.classList.add('is-theme-switching');
+    root().classList.add('is-theme-switching');
     const transition = document.startViewTransition(() => {
       update();
       sync();
     });
-    transition.finished.finally(() => root.classList.remove('is-theme-switching'));
+    transition.finished.finally(() => root().classList.remove('is-theme-switching'));
   }
 
   const g = window as Window & { __themeSwitchBooted?: boolean };
@@ -103,32 +134,38 @@
       if (target?.closest('[data-theme-toggle]')) {
         const next: Theme = currentTheme() === 'dark' ? 'light' : 'dark';
         change(() => {
-          root.dataset.theme = next;
+          root().dataset.theme = next;
         });
         save('theme', next);
+        persistToAccount(next, isCute());
         return;
       }
       if (target?.closest('[data-cute-toggle]')) {
         const next = !isCute();
         change(() => {
-          root.dataset.cute = String(next);
+          root().dataset.cute = String(next);
         });
         save('cute', next ? '1' : '0');
+        persistToAccount(currentTheme(), next);
       }
     });
 
     // Zmiana w innej karcie.
     window.addEventListener('storage', (event) => {
       if (event.key === 'theme' && (event.newValue === 'dark' || event.newValue === 'light')) {
-        root.dataset.theme = event.newValue;
+        root().dataset.theme = event.newValue;
         sync();
       }
       if (event.key === 'cute' && event.newValue !== null) {
-        root.dataset.cute = String(event.newValue === '1');
+        root().dataset.cute = String(event.newValue === '1');
         sync();
       }
     });
 
+    document.addEventListener('astro:after-swap', () => {
+      applyFromStorage();
+      sync();
+    });
     document.addEventListener('astro:page-load', sync);
   }
 
