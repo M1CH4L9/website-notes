@@ -1,0 +1,50 @@
+---
+import 'katex/dist/katex.min.css';
+import '@fontsource-variable/jetbrains-mono/wght.css';
+import '../../../styles/prose.css';
+
+import Base from '../../../layouts/Base.astro';
+import NoteScripts from '../../../components/NoteScripts.astro';
+import Toc from '../../../components/Toc.astro';
+import { formatDate, isoDate } from '../../../lib/format';
+import { getPublicNote } from '../../../lib/server/user-notes';
+import { isDatabaseConfigured } from '../../../lib/server/env';
+import { renderUserMarkdown } from '../../../markdown/user.mjs';
+
+const username = Astro.params.username!;
+const slug = Astro.params.slug!;
+
+if (!isDatabaseConfigured()) {
+  return new Response('Baza nie jest podłączona.', { status: 503 });
+}
+
+const note = await getPublicNote(username, slug);
+if (!note) {
+  return Astro.redirect('/404');
+}
+
+const { html, headings } = await renderUserMarkdown(note.body);
+---
+
+<Base title={`${note.title} · @${note.username}`} description={note.description ?? undefined}>
+  <div class="note-layout">
+    <article class="note-main">
+      <header class="note-head">
+        <p class="page-meta">Notatka użytkownika @{note.username}</p>
+        <h1 class="page-title">{note.title}</h1>
+        {note.description && <p class="page-lead">{note.description}</p>}
+        <p class="page-meta">
+          Aktualizacja: <time datetime={isoDate(note.updated_at)}>{formatDate(note.updated_at)}</time>
+        </p>
+      </header>
+
+      <Toc headings={headings} variant="mobile" />
+      <div class="prose" set:html={html} />
+    </article>
+    <aside class="note-aside">
+      <Toc headings={headings} variant="desktop" />
+    </aside>
+  </div>
+
+  <NoteScripts />
+</Base>

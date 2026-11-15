@@ -1,124 +1,105 @@
 # notatnik.
 
-Publiczna strona z notatkami ze studiów. Układ jest prosty: przedmiot, lista notatek, notatka.
+Publiczna strona z notatkami ze studiów. Układ jest prosty: przedmiot, lista notatek, notatka. Po zalogowaniu każdy ma własną sekcję notatek Markdown.
 
 ## Stos
 
-- [Astro](https://astro.build) w trybie statycznym. Wynik to zwykły HTML i CSS, JavaScript obsługuje tylko przełączniki wyglądu, kopiowanie kodu i spis treści.
-- Treści w Markdownie i MDX (kolekcje treści Astro), przetwarzane przez remark i rehype.
-- Shiki do podświetlania składni, KaTeX do wzorów.
-- Hosting na Vercelu. `vercel.json` wskazuje framework, więc projekt buduje się bez ustawień w panelu.
+- [Astro](https://astro.build) + adapter [`@astrojs/vercel`](https://docs.astro.build/en/guides/integrations-guide/vercel/) (`output: 'server'`).
+- Publiczne notatki Michała: pliki Markdown/MDX w `notatki/` (kolekcje treści Astro).
+- Konta: Neon Postgres (`DATABASE_URL` / `POSTGRES_URL`), hasła scrypt, sesje w bazie, opcjonalnie GitHub OAuth.
+- Migracje SQL przy `npm run build` (tylko gdy jest URL bazy; na Vercelu tylko `production`).
+- Shiki + KaTeX + te same wtyczki Markdowna dla notatek z bazy (z sanityzacją HTML).
 
-## Uruchomienie
+## Uruchomienie lokalne
 
-Wymagany Node.js 24 (Astro 7 działa też na 22.23.4 lub nowszym).
+Wymagany Node.js 24 (Astro 7 działa też na 22.23.4 lub nowszym) i Postgres.
 
 ```sh
+cp .env.example .env   # ustaw DATABASE_URL
 npm install
-npm run dev      # podgląd pod http://localhost:4321
-npm run build    # wersja produkcyjna w dist/
-npm run preview  # podgląd wersji produkcyjnej
-npm run check    # kontrola typów
+npm run db:migrate
+npm run dev            # http://localhost:4321
+npm run build
+npm run check
 ```
 
-## Treści
+## Konta i notatki użytkowników
 
-Wszystko leży w katalogu `notatki/`:
+| Ścieżka | Opis |
+| --- | --- |
+| `/logowanie`, `/rejestracja` | hasło albo GitHub OAuth |
+| `/moje/` | lista własnych notatek |
+| `/moje/nowa/`, `/moje/<slug>/`, `/moje/<slug>/edytuj/` | CRUD + podgląd |
+| `/moje/z-publicznej?subject=&note=` | kopia publicznej notatki |
+| `/u/<nazwa>/<slug>/` | upubliczniona notatka użytkownika |
+| `/admin/prosby/` | akceptacja/odrzucenie próśb (tylko admin) |
+
+Admin: konto połączone z GitHubem `M1CH4L9` (albo `ADMIN_GITHUB_LOGIN`).
+
+## Po merge na Vercelu (kolejność)
+
+1. **Neon (Vercel Marketplace)**  
+   Vercel → projekt → Storage / Marketplace → Neon → Create.  
+   Region najlepiej blisko funkcji (np. Frankfurt / `fra1`).  
+   Zostaw bazę na **Production** (preview bez osobnej bazy nie powinno migrować produkcji — skrypt i tak pomija non-production).
+2. **Zmienna bazy**  
+   Upewnij się, że jest `DATABASE_URL` albo `POSTGRES_URL` (Neon z Marketplace zwykle dokłada to sam).
+3. **GitHub OAuth App**  
+   GitHub → Settings → Developer settings → OAuth Apps → New.  
+   - Application name: `notatnik` (albo inna).  
+   - Homepage URL: `https://<twoja-domena-produkcyjna>`  
+   - Authorization callback URL: `https://<twoja-domena-produkcyjna>/auth/github/callback`
+4. **Zmienne OAuth w Vercel**  
+   Project → Settings → Environment Variables (Production):  
+   - `GITHUB_CLIENT_ID`  
+   - `GITHUB_CLIENT_SECRET` (Sensitive)  
+   Opcjonalnie: `PUBLIC_SITE_URL=https://<domena>`, `ADMIN_GITHUB_LOGIN=M1CH4L9`.
+5. **Redeploy**  
+   Deployments → … → Redeploy (albo pusty commit). Przy buildzie odpalą się migracje.
+6. **Pierwsze logowanie jako admin**  
+   Wejdź na `/logowanie` → **Kontynuuj z GitHubem** i zaloguj się jako **M1CH4L9**.  
+   Konto dostanie `is_admin`. Potem `/admin/prosby/`.
+
+Bez Neonu strona publiczna działa, ale konta zwracają komunikat o braku bazy. Bez OAuth działa tylko rejestracja hasłem (bez admina z GitHuba).
+
+## Treści publiczne (pliki)
 
 ```text
 notatki/
   bsi/
     przedmiot.yaml
     01-formatowanie-tekstu.md
-    02-kod-i-terminal.md
-    03-wzory-i-mdx.mdx
-    obrazki/
-      szyfrowanie-symetryczne.svg
+    ...
 ```
 
-### Nowy przedmiot
-
-1. Utwórz katalog `notatki/<adres>/`, na przykład `notatki/sieci/`. Nazwa katalogu jest adresem: `/przedmioty/sieci/`.
-2. Dodaj w nim plik `przedmiot.yaml`:
-
-   ```yaml
-   title: SK
-   fullName: Sieci komputerowe
-   description: Notatki z wykładów.
-   order: 2
-   ```
-
-   Wymagane jest tylko `title`. `order` ustala kolejność na stronie głównej.
-
-### Nowa notatka
-
-Dodaj plik `.md` albo `.mdx` w katalogu przedmiotu, na przykład `notatki/sieci/01-model-osi.md`:
-
-```md
----
-title: Model OSI
-description: Siedem warstw i co robi każda z nich.
-updated: 2026-11-14
----
-
-Treść notatki.
-```
-
-- Nazwa pliku jest adresem notatki: `/przedmioty/sieci/model-osi/`.
-- Numer na początku nazwy (`01-`) ustala kolejność na liście i nie trafia do adresu.
-- Wymagane jest tylko `title`. Pole `draft: true` ukrywa notatkę na stronie publicznej (lokalnie nadal ją widać).
-
-### Co działa w notatkach
-
-| Element | Składnia |
-| :-- | :-- |
-| Nagłówki, listy, tabele, listy zadań, przypisy, przekreślenia | jak na GitHubie |
-| Blok kodu z podświetlaniem | ` ```python ` |
-| Blok kodu z nazwą pliku | ` ```python title="hasla.py" ` |
-| Blok uwagi | `> [!NOTE]`, `> [!TIP]`, `> [!IMPORTANT]`, `> [!WARNING]`, `> [!CAUTION]` |
-| Blok uwagi z własnym tytułem | `> [!TIP] Własny tytuł` |
-| Wzór w linii i w bloku | `$a^2 + b^2$` oraz `$$ ... $$` |
-| Obrazek | `![opis](./obrazki/plik.png)` |
-| Obrazek z podpisem | `![opis](./obrazki/plik.png "Podpis")` |
-
-Obrazki trzymaj obok notatek (na przykład w `notatki/<przedmiot>/obrazki/`) i podawaj ścieżkę względną. Astro sam je zoptymalizuje. Przykładowe notatki w `notatki/bsi/` pokazują wszystkie elementy i są do usunięcia.
+Szczegóły składni Markdowna (kod, tabele, wzory, callouty) jak wcześniej — te same elementy działają w notatkach użytkowników.
 
 ## Motywy
 
-Wygląd składa się z dwóch niezależnych ustawień, oba siedzą w atrybutach na `<html>`:
+Dwa niezależne ustawienia na `<html>`:
 
-| Ustawienie | Atrybut | Wartości | Domyślnie | Klucz w `localStorage` |
+| Ustawienie | Atrybut | Wartości | Domyślnie | `localStorage` |
 | --- | --- | --- | --- | --- |
 | Jasność | `data-theme` | `dark`, `light` | `dark` | `theme` |
-| Tryb cute | `data-cute` | `true`, `false` | `false` | `cute` (`1` lub `0`) |
+| Tryb cute | `data-cute` | `true`, `false` | `false` | `cute` (`1`/`0`) |
 
-Tryb cute działa z jasnym i z ciemnym: zmienia paletę na różową, kroje nagłówków i zaokrąglenia oraz pokazuje kocie ilustracje.
+Kolory i typografia wyłącznie przez zmienne w `src/styles/tokens.css`. UI kont korzysta z tych samych zmiennych (`src/styles/account.css`).
 
-- `src/components/ThemeInit.astro`: skrypt w `<head>`, który ustawia oba atrybuty przed pierwszym rysowaniem strony, więc nic nie miga.
-- `src/components/ThemeSwitch.astro`: suwak cute i przełącznik jasny/ciemny w nagłówku.
-- `src/styles/tokens.css`: wszystkie kolory, zaokrąglenia i kroje pisma jako zmienne, po jednym bloku na każdy z czterech wariantów.
-- `src/markdown/shiki-kotek-theme.mjs`: kolory kodu dla trybu cute. Bez niego kod używa kolorów GitHuba.
-
-Nowy element interfejsu powinien korzystać ze zmiennych z `tokens.css`, wtedy od razu działa we wszystkich wariantach. Ilustracje z kotami dostają `display: var(--cat-display)`, żeby było je widać tylko w trybie cute.
-
-## Struktura kodu
+## Struktura (konta)
 
 ```text
-notatki/                  treści
-src/content.config.ts     schemat przedmiotów i notatek
-src/lib/notes.ts          odczyt przedmiotów i notatek (jedyne miejsce, które zna źródło danych)
-src/markdown/             wtyczki Markdowna: bloki uwag, ramki kodu, kotwice, tabele, rysunki
-src/pages/                strony: główna, przedmiot, notatka, 404
-src/components/           przełączniki wyglądu, spis treści, ilustracje SVG
-src/styles/               tokens.css (motywy), base.css (układ), prose.css (treść notatki)
-src/site.config.ts        nazwa i opis strony
+db/migrations/            SQL
+scripts/migrate.mjs       migracje przy buildzie
+src/lib/server/           db, sesje, hasła, OAuth, notatki, prośby
+src/markdown/user.mjs     render Markdowna z bazy
+src/pages/logowanie.astro
+src/pages/moje/           prywatna sekcja
+src/pages/admin/          prośby o publikację
+src/pages/u/              publiczne notatki użytkowników
+src/pages/api/            mutacje formularzy
+src/pages/auth/github/    OAuth
 ```
 
-## Dalszy rozwój
+## Poza zakresem (na później)
 
-Strona jest dziś w pełni statyczna, ale kilka decyzji zostawia miejsce na konta, prywatne sekcje i wspólną edycję:
-
-- Strony czytają dane wyłącznie przez `src/lib/notes.ts`. Drugie źródło (baza z notatkami użytkowników) dokłada się tam, bez zmian w szablonach.
-- Konfiguracja Markdowna jest w jednym module (`src/markdown/index.mjs`) i nie zależy od Astro, więc tym samym zestawem wtyczek da się renderować notatki zapisane w bazie.
-- Adresy publicznych notatek są pod `/przedmioty/`, więc ścieżki takie jak `/konto`, `/logowanie` czy `/u/<nazwa>/` pozostają wolne.
-- Astro pozwala włączyć renderowanie po stronie serwera dla wybranych stron (adapter `@astrojs/vercel`), a reszta może zostać statyczna. Logowanie, zapisywanie plików i edycja przez link to wtedy zwykłe trasy serwerowe i interaktywne komponenty na istniejącym układzie.
+Wspólna edycja przez link, PDF/zdjęcia — schemat i trasy ich nie blokują.

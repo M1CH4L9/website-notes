@@ -1,0 +1,78 @@
+---
+import Base from '../layouts/Base.astro';
+import CsrfField from '../components/account/CsrfField.astro';
+import { githubConfigured } from '../lib/server/github';
+import { isDatabaseConfigured } from '../lib/server/env';
+
+if (Astro.locals.user) {
+  return Astro.redirect('/moje/');
+}
+
+const error = Astro.url.searchParams.get('error');
+const next = Astro.url.searchParams.get('next') || '/moje/';
+const dbReady = isDatabaseConfigured();
+const githubOk = githubConfigured();
+---
+
+<Base title="Logowanie" description="Zaloguj się do swoich notatek.">
+  <div class="auth-panel">
+    <h1 class="page-title">Logowanie</h1>
+    <p class="page-lead">Hasło albo konto GitHub.</p>
+
+    {
+      !dbReady && (
+        <p class="form-error">
+          Baza jeszcze nie jest podłączona. Po merge ustaw Neon i zmienne OAuth (opis w README), potem Redeploy.
+        </p>
+      )
+    }
+
+    {error && <p class="form-error">{error}</p>}
+
+    <form class="auth-form" method="post" action="/api/auth/login">
+      <CsrfField />
+      <input type="hidden" name="next" value={next} />
+      <div class="honeypot" aria-hidden="true">
+        <label>
+          Strona
+          <input type="text" name="website" tabindex="-1" autocomplete="off" />
+        </label>
+      </div>
+      <div class="field">
+        <label for="username">Nazwa użytkownika</label>
+        <input id="username" name="username" autocomplete="username" required maxlength="32" />
+      </div>
+      <div class="field">
+        <label for="password">Hasło</label>
+        <input
+          id="password"
+          name="password"
+          type="password"
+          autocomplete="current-password"
+          required
+          minlength="10"
+        />
+      </div>
+      <div class="form-actions">
+        <button class="button" type="submit" disabled={!dbReady}>Zaloguj</button>
+      </div>
+    </form>
+
+    {
+      githubOk && (
+        <>
+          <p class="auth-divider">albo</p>
+          <p>
+            <a class="button button-github" href={`/auth/github?next=${encodeURIComponent(next)}`}>
+              Kontynuuj z GitHubem
+            </a>
+          </p>
+        </>
+      )
+    }
+
+    <p class="auth-footer-links">
+      Nie masz konta? <a href={`/rejestracja?next=${encodeURIComponent(next)}`}>Zarejestruj się</a>
+    </p>
+  </div>
+</Base>

@@ -1,0 +1,82 @@
+---
+import Base from '../layouts/Base.astro';
+import CsrfField from '../components/account/CsrfField.astro';
+import { githubConfigured } from '../lib/server/github';
+import { isDatabaseConfigured } from '../lib/server/env';
+import { MIN_PASSWORD_LENGTH } from '../lib/server/password';
+
+if (Astro.locals.user) {
+  return Astro.redirect('/moje/');
+}
+
+const error = Astro.url.searchParams.get('error');
+const next = Astro.url.searchParams.get('next') || '/moje/';
+const dbReady = isDatabaseConfigured();
+const githubOk = githubConfigured();
+---
+
+<Base title="Rejestracja" description="Załóż konto i prowadź własne notatki.">
+  <div class="auth-panel">
+    <h1 class="page-title">Rejestracja</h1>
+    <p class="page-lead">Własna sekcja notatek Markdown.</p>
+
+    {!dbReady && <p class="form-error">Baza jeszcze nie jest podłączona.</p>}
+    {error && <p class="form-error">{error}</p>}
+
+    <form class="auth-form" method="post" action="/api/auth/register">
+      <CsrfField />
+      <input type="hidden" name="next" value={next} />
+      <div class="honeypot" aria-hidden="true">
+        <label>
+          Strona
+          <input type="text" name="website" tabindex="-1" autocomplete="off" />
+        </label>
+      </div>
+      <div class="field">
+        <label for="username">Nazwa użytkownika</label>
+        <input
+          id="username"
+          name="username"
+          autocomplete="username"
+          required
+          minlength="3"
+          maxlength="32"
+          pattern="[a-z0-9_]{3,32}"
+        />
+        <p class="hint">Małe litery, cyfry i _, 3–32 znaki.</p>
+      </div>
+      <div class="field">
+        <label for="password">Hasło</label>
+        <input
+          id="password"
+          name="password"
+          type="password"
+          autocomplete="new-password"
+          required
+          minlength={MIN_PASSWORD_LENGTH}
+        />
+        <p class="hint">Minimum {MIN_PASSWORD_LENGTH} znaków.</p>
+      </div>
+      <div class="form-actions">
+        <button class="button" type="submit" disabled={!dbReady}>Utwórz konto</button>
+      </div>
+    </form>
+
+    {
+      githubOk && (
+        <>
+          <p class="auth-divider">albo</p>
+          <p>
+            <a class="button button-github" href={`/auth/github?next=${encodeURIComponent(next)}`}>
+              Kontynuuj z GitHubem
+            </a>
+          </p>
+        </>
+      )
+    }
+
+    <p class="auth-footer-links">
+      Masz już konto? <a href={`/logowanie?next=${encodeURIComponent(next)}`}>Zaloguj się</a>
+    </p>
+  </div>
+</Base>

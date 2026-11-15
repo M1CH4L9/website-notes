@@ -1,0 +1,101 @@
+---
+import 'katex/dist/katex.min.css';
+import '@fontsource-variable/jetbrains-mono/wght.css';
+import '../../styles/prose.css';
+
+import Base from '../../layouts/Base.astro';
+import CsrfField from '../../components/account/CsrfField.astro';
+import { listPendingRequests } from '../../lib/server/publications';
+import { formatDate, isoDate } from '../../lib/format';
+import { renderUserMarkdown } from '../../markdown/user.mjs';
+
+if (!Astro.locals.user) {
+  return Astro.redirect('/logowanie?next=' + encodeURIComponent('/admin/prosby/'));
+}
+if (!Astro.locals.user.is_admin) {
+  return Astro.redirect('/moje/?error=' + encodeURIComponent('Brak uprawnień admina.'));
+}
+
+const requests = await listPendingRequests();
+const previews = await Promise.all(
+  requests.map(async (req) => ({
+    id: req.id,
+    html: (await renderUserMarkdown(req.note_body.slice(0, 20_000))).html,
+  })),
+);
+const previewById = new Map(previews.map((p) => [p.id, p.html]));
+const error = Astro.url.searchParams.get('error');
+const ok = Astro.url.searchParams.get('ok');
+---
+
+<Base title="Prośby o publikację" description="Akceptacja i odrzucanie próśb o upublicznienie.">
+  <header class="page-head">
+    <h1 class="page-title">Prośby o publikację</h1>
+    <p class="page-lead">Po akceptacji notatka jest dostępna pod `/u/nazwa/adres/`.</p>
+  </header>
+
+  <div class="account-toolbar">
+    <a class="button button-secondary" href="/moje/">Moje notatki</a>
+  </div>
+
+  {error && <p class="form-error">{error}</p>}
+  {ok && <p class="form-ok">{ok}</p>}
+
+  {
+    requests.length === 0 ? (
+      <div class="empty">
+        <p class="empty-title">Brak oczekujących próśb</p>
+      </div>
+    ) : (
+      <ul class="request-list">
+        {requests.map((req) => (
+          <li class="request-card">
+            <div>
+              <strong>{req.note_title}</strong>
+              <div class="my-note-list-meta">
+                <span>@{req.username}</span>
+                <span>
+                  <time datetime={isoDate(req.created_at)}>{formatDate(req.created_at)}</time>
+                </span>
+                <span>
+                  docelowo: /u/{req.username}/{req.note_slug}/
+                </span>
+              </div>
+              {req.message && <p class="page-lead">{req.message}</p>}
+              {req.note_description && <p class="hint">{req.note_description}</p>}
+            </div>
+
+            <details>
+              <summary>Podgląd treści</summary>
+              <div class="editor-preview" style="margin-top:0.75rem;">
+                <div class="prose" set:html={previewById.get(req.id) || ''} />
+              </div>
+            </details>
+
+            <form class="request-actions" method="post" action="/api/admin/resolve-request">
+              <CsrfField />
+              <input type="hidden" name="request_id" value={req.id} />
+              <div class="field" style="flex:1 1 12rem;">
+                <label class="visually-hidden" for={`note-${req.id}`}>
+                  Notatka admina
+                </label>
+                <input
+                  id={`note-${req.id}`}
+                  name="admin_note"
+                  placeholder="Notatka (opcjonalnie)"
+                  maxlength="500"
+                />
+              </div>
+              <button class="button" type="submit" name="decision" value="accept">
+                Akceptuj
+              </button>
+              <button class="button button-danger" type="submit" name="decision" value="reject">
+                Odrzuć
+              </button>
+            </form>
+          </li>
+        ))}
+      </ul>
+    )
+  }
+</Base>

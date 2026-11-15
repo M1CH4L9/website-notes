@@ -1,0 +1,60 @@
+---
+import 'katex/dist/katex.min.css';
+import '@fontsource-variable/jetbrains-mono/wght.css';
+import '../../styles/prose.css';
+
+import Base from '../../layouts/Base.astro';
+import CsrfField from '../../components/account/CsrfField.astro';
+import { renderUserMarkdown } from '../../markdown/user.mjs';
+
+if (!Astro.locals.user) {
+  return Astro.redirect('/logowanie?next=' + encodeURIComponent('/moje/nowa/'));
+}
+
+const error = Astro.url.searchParams.get('error');
+const previewBody = Astro.url.searchParams.get('preview') || '';
+const { html: previewHtml } = previewBody
+  ? await renderUserMarkdown(previewBody)
+  : { html: '<p class="page-lead">Podgląd pojawi się po zapisaniu albo w edycji.</p>' };
+---
+
+<Base title="Nowa notatka" description="Utwórz notatkę Markdown.">
+  <header class="page-head">
+    <h1 class="page-title">Nowa notatka</h1>
+    <p class="page-lead">Ten sam Markdown co w notatkach publicznych: kod, tabele, wzory, callouty.</p>
+  </header>
+
+  {error && <p class="form-error">{error}</p>}
+
+  <div class="editor-layout is-split">
+    <form class="note-form" method="post" action="/api/notes/create">
+      <CsrfField />
+      <div class="field">
+        <label for="title">Tytuł</label>
+        <input id="title" name="title" required maxlength="200" />
+      </div>
+      <div class="field">
+        <label for="description">Krótki opis</label>
+        <input id="description" name="description" maxlength="500" />
+      </div>
+      <div class="field">
+        <label for="slug">Adres (opcjonalnie)</label>
+        <input id="slug" name="slug" pattern="[a-z0-9]+(?:-[a-z0-9]+)*" maxlength="80" />
+        <p class="hint">Domyślnie z tytułu. Małe litery, cyfry, myślniki.</p>
+      </div>
+      <div class="field">
+        <label for="body">Treść Markdown</label>
+        <textarea id="body" name="body" spellcheck="true"></textarea>
+      </div>
+      <div class="form-actions">
+        <button class="button" type="submit">Utwórz</button>
+        <a class="button button-secondary" href="/moje/">Anuluj</a>
+      </div>
+    </form>
+
+    <aside class="editor-preview" aria-label="Podgląd">
+      <p class="editor-preview-label">Podgląd (po zapisaniu pełny)</p>
+      <div class="prose" set:html={previewHtml} />
+    </aside>
+  </div>
+</Base>
