@@ -10,6 +10,7 @@ import figtreeLatin from '@fontsource-variable/figtree/files/figtree-latin-wght-
 import figtreeLatinExt from '@fontsource-variable/figtree/files/figtree-latin-ext-wght-normal.woff2?url';
 import nunitoLatin from '@fontsource-variable/nunito/files/nunito-latin-wght-normal.woff2?url';
 
+import { ClientRouter } from 'astro:transitions';
 import CatMark from '../components/CatMark.astro';
 import PawTrail from '../components/PawTrail.astro';
 import ThemeInit from '../components/ThemeInit.astro';
@@ -41,17 +42,20 @@ const user = Astro.locals.user;
     {canonical && <link rel="canonical" href={canonical} />}
     {canonical && <meta property="og:url" content={canonical} />}
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="icon" href="/favicon-32.png" type="image/png" sizes="32x32" />
+    <link rel="apple-touch-icon" href="/oauth-icon.png" />
     <link rel="preload" href={figtreeLatin} as="font" type="font/woff2" crossorigin />
     <link rel="preload" href={figtreeLatinExt} as="font" type="font/woff2" crossorigin />
     <link rel="preload" href={nunitoLatin} as="font" type="font/woff2" crossorigin />
     <ThemeInit />
+    <ClientRouter />
     <slot name="head" />
   </head>
   <body ontouchstart="">
     {/* Pusty ontouchstart sprawia, że iOS Safari pokazuje stany :active po dotknięciu. */}
     <a class="skip-link" href="#tresc">Przejdź do treści</a>
 
-    <header class="site-header">
+    <header class="site-header" transition:name="site-header">
       <div class="container site-header-inner">
         <a class="brand" href="/" aria-label={`${site.name}, strona główna`}>
           <CatMark class="brand-mark" />
@@ -62,23 +66,23 @@ const user = Astro.locals.user;
           {
             user ? (
               <>
-                <a class="header-link" href="/moje/">
-                  Moje
+                <a class="button button-secondary header-action" href="/moje/">
+                  Profil
                 </a>
-                {user.is_admin && (
-                  <a class="header-link" href="/admin/prosby/">
-                    Prośby
-                  </a>
-                )}
                 <form method="post" action="/api/auth/logout" class="header-logout">
                   {Astro.locals.csrf && <input type="hidden" name="csrf" value={Astro.locals.csrf} />}
-                  <button type="submit" class="header-link header-link-button">Wyloguj</button>
+                  <button type="submit" class="button button-secondary header-action">Wyloguj</button>
                 </form>
               </>
             ) : (
-              <a class="header-link-accent" href="/logowanie">
-                Zaloguj
-              </a>
+              <>
+                <a class="button button-secondary header-action" href="/logowanie">
+                  Zaloguj
+                </a>
+                <a class="button header-action" href="/rejestracja">
+                  Zarejestruj
+                </a>
+              </>
             )
           }
         </div>

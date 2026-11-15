@@ -91,8 +91,14 @@ export function rehypeCodeFrame() {
 
       const button = element(
         'button',
-        { type: 'button', className: ['code-copy'], dataCodeCopy: '' },
-        [element('span', { className: ['code-copy-label'] }, [text('Kopiuj')])],
+        {
+          type: 'button',
+          className: ['code-copy'],
+          dataCodeCopy: '',
+          ariaLabel: 'Kopiuj',
+          title: 'Kopiuj',
+        },
+        [element('span', { className: ['code-copy-label', 'visually-hidden'] }, [text('Kopiuj')])],
       );
 
       parent.children[index] = element('div', { className: ['code-block'] }, [

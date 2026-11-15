@@ -1,0 +1,215 @@
+---
+import CsrfField from './CsrfField.astro';
+
+interface Props {
+  action: string;
+  submitLabel: string;
+  cancelHref: string;
+  title?: string;
+  description?: string;
+  slug?: string;
+  showSlug?: boolean;
+  body?: string;
+  initialPreviewHtml?: string;
+  toast?: string | null;
+}
+
+const {
+  action,
+  submitLabel,
+  cancelHref,
+  title = '',
+  description = '',
+  slug = '',
+  showSlug = false,
+  body = '',
+  initialPreviewHtml = '',
+  toast = null,
+} = Astro.props;
+---
+
+{
+  toast && (
+    <div class="editor-toast" data-editor-toast role="status">
+      {toast}
+    </div>
+  )
+}
+
+<form class="note-editor" method="post" action={action} data-note-editor>
+  <CsrfField />
+  {slug && !showSlug && <input type="hidden" name="slug" value={slug} />}
+
+  <div class="note-editor-meta">
+    <div class="field">
+      <label for="title">Tytuł</label>
+      <input id="title" name="title" required maxlength="200" value={title} />
+    </div>
+    <div class="field">
+      <label for="description">Krótki opis</label>
+      <input id="description" name="description" maxlength="500" value={description} />
+    </div>
+    {
+      showSlug && (
+        <div class="field">
+          <label for="slug">Adres (opcjonalnie)</label>
+          <input
+            id="slug"
+            name="slug"
+            pattern="[a-z0-9]+(?:-[a-z0-9]+)*"
+            maxlength="80"
+            value={slug}
+          />
+          <p class="hint">Domyślnie z tytułu. Małe litery, cyfry, myślniki.</p>
+        </div>
+      )
+    }
+  </div>
+
+  <div class="form-actions note-editor-actions">
+    <button class="button" type="submit">{submitLabel}</button>
+    <a class="button button-secondary" href={cancelHref}>Anuluj</a>
+  </div>
+
+  <div class="note-editor-workspace" data-editor-workspace>
+    <div class="note-editor-pane note-editor-source" data-editor-source>
+      <label class="note-editor-pane-label" for="body">Markdown</label>
+      <textarea id="body" name="body" spellcheck="true" data-editor-body>{body}</textarea>
+    </div>
+
+    <div
+      class="note-editor-splitter"
+      data-editor-splitter
+      role="separator"
+      aria-orientation="vertical"
+      aria-label="Przeciągnij, żeby zmienić szerokość podglądu"
+      tabindex="0"
+    ></div>
+
+    <aside class="note-editor-pane note-editor-preview" data-editor-preview aria-label="Podgląd na żywo">
+      <p class="note-editor-pane-label">Podgląd</p>
+      <div class="note-editor-preview-scroll">
+        <div class="prose" data-editor-preview-html set:html={initialPreviewHtml || '<p class="page-lead">Zacznij pisać, a tu pojawi się podgląd.</p>'} />
+      </div>
+    </aside>
+  </div>
+</form>
+
+<script>
+  function initNoteEditor(root: HTMLElement) {
+    if (root.dataset.ready === '1') return;
+    root.dataset.ready = '1';
+
+    const body = root.querySelector<HTMLTextAreaElement>('[data-editor-body]');
+    const preview = root.querySelector<HTMLElement>('[data-editor-preview-html]');
+    const workspace = root.querySelector<HTMLElement>('[data-editor-workspace]');
+    const splitter = root.querySelector<HTMLElement>('[data-editor-splitter]');
+    const sourcePane = root.querySelector<HTMLElement>('[data-editor-source]');
+    if (!body || !preview || !workspace || !splitter || !sourcePane) return;
+
+    let timer = 0;
+    let requestId = 0;
+    const emptyHtml = '<p class="page-lead">Zacznij pisać, a tu pojawi się podgląd.</p>';
+
+    const render = async () => {
+      const value = body.value;
+      if (!value.trim()) {
+        preview.innerHTML = emptyHtml;
+        return;
+      }
+      const id = ++requestId;
+      try {
+        const response = await fetch('/api/notes/preview', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json', accept: 'application/json' },
+          body: JSON.stringify({ body: value }),
+          credentials: 'same-origin',
+        });
+        if (!response.ok) return;
+        const data = (await response.json()) as { html?: string };
+        if (id !== requestId) return;
+        if (typeof data.html === 'string') preview.innerHTML = data.html;
+      } catch {
+        // Podgląd jest pomocniczy: błąd sieci nie blokuje edycji.
+      }
+    };
+
+    const schedule = () => {
+      window.clearTimeout(timer);
+      timer = window.setTimeout(render, 280);
+    };
+
+    body.addEventListener('input', schedule);
+
+    const storageKey = 'note-editor-split';
+    const applySplit = (ratio: number) => {
+      const clamped = Math.min(0.72, Math.max(0.28, ratio));
+      workspace.style.setProperty('--editor-split', `${(clamped * 100).toFixed(2)}%`);
+      try {
+        localStorage.setItem(storageKey, String(clamped));
+      } catch {}
+    };
+
+    try {
+      const saved = Number(localStorage.getItem(storageKey));
+      if (saved >= 0.28 && saved <= 0.72) applySplit(saved);
+    } catch {}
+
+    let dragging = false;
+
+    const onPointerMove = (event: PointerEvent) => {
+      if (!dragging) return;
+      const rect = workspace.getBoundingClientRect();
+      if (rect.width < 40) return;
+      applySplit((event.clientX - rect.left) / rect.width);
+    };
+
+    const stopDrag = () => {
+      if (!dragging) return;
+      dragging = false;
+      workspace.classList.remove('is-resizing');
+      window.removeEventListener('pointermove', onPointerMove);
+      window.removeEventListener('pointerup', stopDrag);
+    };
+
+    splitter.addEventListener('pointerdown', (event) => {
+      if (window.matchMedia('(max-width: 63.99rem)').matches) return;
+      dragging = true;
+      workspace.classList.add('is-resizing');
+      splitter.setPointerCapture(event.pointerId);
+      window.addEventListener('pointermove', onPointerMove);
+      window.addEventListener('pointerup', stopDrag);
+      event.preventDefault();
+    });
+
+    splitter.addEventListener('keydown', (event) => {
+      if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return;
+      event.preventDefault();
+      const current = Number.parseFloat(getComputedStyle(workspace).getPropertyValue('--editor-split')) / 100 || 0.5;
+      applySplit(current + (event.key === 'ArrowLeft' ? -0.04 : 0.04));
+    });
+
+    if (body.value.trim()) schedule();
+  }
+
+  function initToasts() {
+    for (const toast of document.querySelectorAll<HTMLElement>('[data-editor-toast]')) {
+      if (toast.dataset.ready === '1') continue;
+      toast.dataset.ready = '1';
+      window.setTimeout(() => {
+        toast.classList.add('is-leaving');
+        window.setTimeout(() => toast.remove(), 220);
+      }, 3200);
+    }
+  }
+
+  const boot = () => {
+    for (const editor of document.querySelectorAll<HTMLElement>('[data-note-editor]')) {
+      initNoteEditor(editor);
+    }
+    initToasts();
+  };
+
+  boot();
+  document.addEventListener('astro:page-load', boot);
+</script>

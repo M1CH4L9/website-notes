@@ -1,4 +1,4 @@
-# notatnik.
+# notatnikpja.
 
 Publiczna strona z notatkami ze studiów. Układ jest prosty: przedmiot, lista notatek, notatka. Po zalogowaniu każdy ma własną sekcję notatek Markdown.
 
@@ -28,8 +28,8 @@ npm run check
 | Ścieżka | Opis |
 | --- | --- |
 | `/logowanie`, `/rejestracja` | hasło albo GitHub OAuth |
-| `/moje/` | lista własnych notatek |
-| `/moje/nowa/`, `/moje/<slug>/`, `/moje/<slug>/edytuj/` | CRUD + podgląd |
+| `/moje/` | profil: lista własnych notatek |
+| `/moje/nowa/`, `/moje/<slug>/`, `/moje/<slug>/edytuj/` | CRUD + live preview |
 | `/moje/z-publicznej?subject=&note=` | kopia publicznej notatki |
 | `/u/<nazwa>/<slug>/` | upubliczniona notatka użytkownika |
 | `/admin/prosby/` | akceptacja/odrzucenie próśb (tylko admin) |
@@ -45,8 +45,9 @@ Admin: konto połączone z GitHubem `M1CH4L9` (albo `ADMIN_GITHUB_LOGIN`).
 2. **Zmienna bazy**  
    Upewnij się, że jest `DATABASE_URL` albo `POSTGRES_URL` (Neon z Marketplace zwykle dokłada to sam).
 3. **GitHub OAuth App**  
-   GitHub → Settings → Developer settings → OAuth Apps → New.  
-   - Application name: `notatnik` (albo inna).  
+   GitHub → Settings → Developer settings → OAuth Apps → New (albo edycja istniejącej).  
+   - Application name: `notatnikpja`  
+   - Application logo: wgraj `public/oauth-icon.png` z repo  
    - Homepage URL: `https://<twoja-domena-produkcyjna>`  
    - Authorization callback URL: `https://<twoja-domena-produkcyjna>/auth/github/callback`
 4. **Zmienne OAuth w Vercel**  
@@ -93,11 +94,13 @@ scripts/migrate.mjs       migracje przy buildzie
 src/lib/server/           db, sesje, hasła, OAuth, notatki, prośby
 src/markdown/user.mjs     render Markdowna z bazy
 src/pages/logowanie.astro
-src/pages/moje/           prywatna sekcja
+src/pages/moje/           prywatna sekcja / profil
 src/pages/admin/          prośby o publikację
 src/pages/u/              publiczne notatki użytkowników
-src/pages/api/            mutacje formularzy
+src/pages/api/            mutacje formularzy + podgląd Markdown
 src/pages/auth/github/    OAuth
+public/favicon.svg        favicon
+public/oauth-icon.png     ikona do GitHub OAuth App
 ```
 
 ## Poza zakresem (na później)

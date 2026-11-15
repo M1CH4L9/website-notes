@@ -38,6 +38,8 @@
 
     const ok = await copyText(code.textContent ?? '');
     button.dataset.state = ok ? 'copied' : 'failed';
+    button.setAttribute('aria-label', ok ? 'Skopiowano' : 'Nie udało się skopiować');
+    button.title = ok ? 'Skopiowano' : 'Nie udało się skopiować';
     label.textContent = ok ? 'Skopiowano' : 'Nie udało się';
 
     window.clearTimeout(timers.get(button));
@@ -45,6 +47,8 @@
       button,
       window.setTimeout(() => {
         delete button.dataset.state;
+        button.setAttribute('aria-label', 'Kopiuj');
+        button.title = 'Kopiuj';
         label.textContent = 'Kopiuj';
       }, 1800),
     );

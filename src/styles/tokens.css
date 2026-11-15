@@ -16,9 +16,9 @@
   --font-mono: 'JetBrains Mono Variable', ui-monospace, 'SF Mono', 'Cascadia Code', Menlo, Consolas,
     monospace;
 
-  --page-width: 72rem;
+  --page-width: 74rem;
   --page-gutter: 1rem;
-  --prose-width: 46rem;
+  --prose-width: 50rem;
 
   /* Logo ma stałe kolory, niezależne od motywu. */
   --brand: #d94a85;
@@ -75,9 +75,9 @@
   --control-thumb: #e6edf3;
   --control-ink: #39424d;
 
-  --code-bg: #151b23;
-  --code-header-bg: #1c242e;
-  --code-border: #303841;
+  --code-bg: #0b1017;
+  --code-header-bg: #121821;
+  --code-border: #3a4450;
   --code-inline-bg: #232b35;
   --code-inline-text: #e6edf3;
   --code-scroll-shadow: rgb(0 0 0 / 0.45);
@@ -115,9 +115,9 @@
   --control-thumb: #ffffff;
   --control-ink: #6a737d;
 
-  --code-bg: #f6f8fa;
-  --code-header-bg: #eef1f4;
-  --code-border: #d1d9e0;
+  --code-bg: #eef2f6;
+  --code-header-bg: #e4e9ef;
+  --code-border: #c8d1da;
   --code-inline-bg: #eff1f3;
   --code-inline-text: #1f2328;
   --code-scroll-shadow: rgb(31 35 40 / 0.14);
@@ -165,9 +165,9 @@
   --control-thumb: #ffffff;
   --control-ink: #a53c68;
 
-  --code-bg: #fffafc;
-  --code-header-bg: #ffeef4;
-  --code-border: #f5cfdc;
+  --code-bg: #ffe8f0;
+  --code-header-bg: #ffd7e5;
+  --code-border: #efb7ca;
   --code-inline-bg: #ffe6ee;
   --code-inline-text: #8a1f4d;
   --code-scroll-shadow: rgb(140 40 85 / 0.16);
@@ -204,9 +204,9 @@
   --control-thumb: #fff3f7;
   --control-ink: #8a3560;
 
-  --code-bg: #20151d;
-  --code-header-bg: #2b1c27;
-  --code-border: #46303d;
+  --code-bg: #140e13;
+  --code-header-bg: #1d141b;
+  --code-border: #5a3d4d;
   --code-inline-bg: #3a2433;
   --code-inline-text: #ffc4d9;
   --code-scroll-shadow: rgb(0 0 0 / 0.5);

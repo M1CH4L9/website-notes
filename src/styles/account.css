@@ -1,44 +1,26 @@
 /* Formularze i panel konta — tylko zmienne motywu z tokens.css. */
 
-.header-link {
-  color: var(--text-muted);
-  padding: 0.35rem 0.55rem;
-  border-radius: var(--radius-s);
-  text-decoration: none;
-  font-weight: 600;
-  font-size: 0.875rem;
-}
-
-.header-link:hover {
-  color: var(--text);
-  background: var(--surface-sunken);
-}
-
-.header-link-button {
-  background: transparent;
-  border: 0;
-  cursor: pointer;
-  font: inherit;
-}
-
 .header-logout {
   display: inline-flex;
   margin: 0;
 }
 
-.header-link-accent {
-  color: var(--on-accent);
-  background: var(--accent);
-  padding: 0.4rem 0.75rem;
-  border-radius: var(--radius-s);
-  text-decoration: none;
-  font-weight: 600;
+.header-action {
+  min-height: 2.25rem;
+  padding-inline: 0.8rem;
   font-size: 0.875rem;
 }
 
-.header-link-accent:hover {
-  color: var(--on-accent);
-  background: var(--accent-hover);
+@media (max-width: 39.99rem) {
+  .site-header-actions {
+    gap: 0.3rem;
+  }
+
+  .header-action {
+    min-height: 2.1rem;
+    padding-inline: 0.55rem;
+    font-size: 0.8125rem;
+  }
 }
 
 .auth-panel {
@@ -56,14 +38,16 @@
 
 .auth-form,
 .note-form,
-.inline-form {
+.inline-form,
+.note-editor {
   display: grid;
-  gap: 0.9rem;
+  gap: 1rem;
 }
 
 .field {
   display: grid;
   gap: 0.35rem;
+  min-width: 0;
 }
 
 .field label {
@@ -80,6 +64,8 @@
 .field textarea,
 .field select {
   width: 100%;
+  box-sizing: border-box;
+  min-height: 2.5rem;
   padding: 0.65rem 0.75rem;
   border: 1px solid var(--border-strong);
   border-radius: var(--radius-s);
@@ -116,6 +102,8 @@ button.button {
   align-items: center;
   justify-content: center;
   gap: 0.4rem;
+  box-sizing: border-box;
+  min-height: 2.5rem;
   padding: 0.55rem 0.95rem;
   border: 1px solid transparent;
   border-radius: var(--radius-s);
@@ -123,6 +111,7 @@ button.button {
   color: var(--on-accent);
   font: inherit;
   font-weight: 600;
+  line-height: 1.2;
   text-decoration: none;
   cursor: pointer;
 }
@@ -150,12 +139,12 @@ button.button-secondary:hover {
 button.button-danger {
   background: transparent;
   color: var(--callout-caution);
-  border-color: var(--border-strong);
+  border-color: color-mix(in srgb, var(--callout-caution) 45%, var(--border-strong));
 }
 
 .button-danger:hover,
 button.button-danger:hover {
-  background: var(--surface-sunken);
+  background: color-mix(in srgb, var(--callout-caution) 10%, var(--surface));
   color: var(--callout-caution);
 }
 
@@ -188,7 +177,8 @@ button.button-danger:hover {
 
 .form-error,
 .form-ok {
-  padding: 0.7rem 0.85rem;
+  margin: 0 0 1rem;
+  padding: 0.75rem 0.9rem;
   border-radius: var(--radius-s);
   border: 1px solid var(--border);
 }
@@ -220,7 +210,7 @@ button.button-danger:hover {
 
 .my-note-list-item {
   display: grid;
-  gap: 0.35rem;
+  gap: 0.45rem;
   padding: 1rem 1.1rem;
   border: 1px solid var(--border);
   border-radius: var(--radius-m);
@@ -239,24 +229,35 @@ button.button-danger:hover {
   color: var(--accent);
 }
 
-.my-note-list-meta {
+.my-note-list-meta,
+.page-meta {
   color: var(--text-muted);
   font-size: 0.875rem;
   display: flex;
   flex-wrap: wrap;
-  gap: 0.5rem 0.85rem;
+  align-items: center;
+  gap: 0.45rem 0.75rem;
+}
+
+.page-meta {
+  margin-top: 0.75rem;
+  font-size: 0.9375rem;
 }
 
 .badge {
   display: inline-flex;
   align-items: center;
-  padding: 0.1rem 0.45rem;
+  flex: none;
+  max-width: 100%;
+  padding: 0.15rem 0.5rem;
   border-radius: var(--radius-s);
   border: 1px solid var(--border);
   background: var(--surface-sunken);
   color: var(--text-muted);
   font-size: 0.75rem;
   font-weight: 600;
+  line-height: 1.3;
+  white-space: nowrap;
 }
 
 .badge-public {
@@ -284,33 +285,179 @@ button.button-danger:hover {
   gap: 0.5rem;
 }
 
-.editor-layout {
+/* Edytor Typst-like */
+
+.note-editor-meta {
   display: grid;
-  gap: 1.25rem;
-}
-
-@media (min-width: 64rem) {
-  .editor-layout.is-split {
-    grid-template-columns: 1fr 1fr;
-    align-items: start;
-  }
-}
-
-.editor-preview {
+  gap: 0.85rem;
+  padding: 1rem 1.05rem;
   border: 1px solid var(--border);
   border-radius: var(--radius-m);
   background: var(--surface);
-  padding: 1rem 1.1rem;
-  min-height: 12rem;
 }
 
-.editor-preview-label {
+.note-editor-actions {
+  margin: 0;
+}
+
+.note-editor-workspace {
+  --editor-split: 50%;
+  display: grid;
+  gap: 0.75rem;
+  min-height: 22rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-m);
+  background: var(--surface);
+  overflow: hidden;
+}
+
+@media (min-width: 64rem) {
+  .note-editor-workspace {
+    grid-template-columns: minmax(0, var(--editor-split)) 0.55rem minmax(0, 1fr);
+    gap: 0;
+    height: min(62vh, 36rem);
+    min-height: 22rem;
+  }
+}
+
+.note-editor-pane {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+}
+
+.note-editor-pane-label {
+  margin: 0;
+  padding: 0.65rem 0.9rem 0.35rem;
   color: var(--text-muted);
-  font-size: 0.8125rem;
-  font-weight: 600;
-  margin-bottom: 0.75rem;
-  text-transform: uppercase;
+  font-size: 0.75rem;
+  font-weight: 700;
   letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.note-editor-source textarea {
+  flex: 1;
+  width: 100%;
+  min-height: 18rem;
+  margin: 0;
+  padding: 0.55rem 0.9rem 0.9rem;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-size: 0.9rem;
+  line-height: 1.55;
+  resize: none;
+  outline: none;
+}
+
+@media (min-width: 64rem) {
+  .note-editor-source textarea {
+    min-height: 0;
+    overflow: auto;
+  }
+}
+
+.note-editor-source textarea:focus {
+  outline: none;
+  box-shadow: inset 0 0 0 2px var(--focus-ring);
+}
+
+.note-editor-preview-scroll {
+  flex: 1;
+  min-height: 12rem;
+  padding: 0.35rem 0.95rem 1rem;
+  overflow: auto;
+}
+
+@media (min-width: 64rem) {
+  .note-editor-preview-scroll {
+    min-height: 0;
+  }
+}
+
+.note-editor-splitter {
+  display: none;
+}
+
+@media (min-width: 64rem) {
+  .note-editor-splitter {
+    display: block;
+    width: 100%;
+    cursor: col-resize;
+    background:
+      linear-gradient(var(--border), var(--border)) center / 1px 100% no-repeat,
+      var(--surface-sunken);
+    touch-action: none;
+  }
+
+  .note-editor-splitter:hover,
+  .note-editor-splitter:focus-visible,
+  .note-editor-workspace.is-resizing .note-editor-splitter {
+    background:
+      linear-gradient(var(--accent), var(--accent)) center / 2px 100% no-repeat,
+      var(--accent-soft);
+  }
+
+  .note-editor-workspace.is-resizing {
+    user-select: none;
+    cursor: col-resize;
+  }
+}
+
+.editor-toast {
+  position: sticky;
+  top: 0.75rem;
+  z-index: 5;
+  width: fit-content;
+  max-width: min(100%, 28rem);
+  margin: 0 0 1rem;
+  padding: 0.65rem 0.9rem;
+  border: 1px solid color-mix(in srgb, var(--callout-tip) 35%, var(--border));
+  border-radius: var(--radius-s);
+  background: color-mix(in srgb, var(--callout-tip) 14%, var(--surface));
+  color: var(--text);
+  box-shadow: var(--shadow-card-hover);
+  transition:
+    opacity 0.2s ease,
+    transform 0.2s ease;
+}
+
+.editor-toast.is-leaving {
+  opacity: 0;
+  transform: translateY(-0.35rem);
+}
+
+.publish-request-panel {
+  width: min(100%, 36rem);
+  margin: 2.5rem 0 1rem;
+  padding: 1.15rem 1.2rem 1.25rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-m);
+  background: var(--surface-sunken);
+}
+
+.publish-request-title {
+  margin: 0 0 0.4rem;
+  font-family: var(--font-heading);
+  font-weight: var(--heading-weight);
+  font-size: 1.2rem;
+}
+
+.publish-request-lead {
+  margin: 0 0 1rem;
+  color: var(--text-muted);
+}
+
+.publish-request-panel .auth-form {
+  gap: 0.85rem;
+}
+
+.publish-request-panel .field input {
+  background: var(--surface);
 }
 
 .request-list {
@@ -327,13 +474,19 @@ button.button-danger:hover {
   border-radius: var(--radius-m);
   background: var(--surface);
   display: grid;
-  gap: 0.65rem;
+  gap: 0.85rem;
 }
 
 .request-actions {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.5rem;
+  gap: 0.65rem;
+  align-items: flex-end;
+}
+
+.request-actions .field {
+  flex: 1 1 12rem;
+  margin: 0;
 }
 
 .honeypot {
@@ -342,4 +495,8 @@ button.button-danger:hover {
   opacity: 0;
   height: 0;
   overflow: hidden;
+}
+
+.note-editor-preview .code-copy {
+  pointer-events: none;
 }

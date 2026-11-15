@@ -2,7 +2,7 @@ import { createHash, randomBytes, timingSafeEqual } from 'node:crypto';
 import type { AstroCookies } from 'astro';
 import { query } from './db';
 import { isProd, sessionCookieName, sessionTtlMs } from './env';
-import { findUserById, type User } from './users';
+import type { User } from './users';
 
 export type SessionRow = {
   id: string;
@@ -69,26 +69,57 @@ export async function destroySession(token: string | undefined) {
   await query('DELETE FROM sessions WHERE token_hash = $1', [hashToken(token)]);
 }
 
+type SessionUserRow = SessionRow & {
+  user_id: string;
+  username: string;
+  password_hash: string | null;
+  github_id: string | null;
+  github_login: string | null;
+  is_admin: boolean;
+  created_at_user: Date;
+};
+
 export async function getAuthFromCookies(cookies: AstroCookies): Promise<AuthContext | null> {
   const token = cookies.get(sessionCookieName())?.value;
   if (!token) return null;
 
-  const { rows } = await query<SessionRow>(
-    `SELECT * FROM sessions WHERE token_hash = $1 LIMIT 1`,
+  // Jedno zapytanie zamiast sesji + użytkownika osobno (mniej round-tripów do Neonu).
+  const { rows } = await query<SessionUserRow>(
+    `SELECT s.id, s.user_id, s.token_hash, s.csrf_secret, s.expires_at, s.created_at,
+            u.username, u.password_hash, u.github_id, u.github_login, u.is_admin,
+            u.created_at AS created_at_user
+     FROM sessions s
+     JOIN users u ON u.id = s.user_id
+     WHERE s.token_hash = $1
+     LIMIT 1`,
     [hashToken(token)],
   );
-  const session = rows[0];
-  if (!session) return null;
-  if (new Date(session.expires_at).getTime() <= Date.now()) {
-    await query('DELETE FROM sessions WHERE id = $1', [session.id]);
+  const row = rows[0];
+  if (!row) return null;
+
+  if (new Date(row.expires_at).getTime() <= Date.now()) {
+    await query('DELETE FROM sessions WHERE id = $1', [row.id]);
     return null;
   }
 
-  const user = await findUserById(session.user_id);
-  if (!user) {
-    await query('DELETE FROM sessions WHERE id = $1', [session.id]);
-    return null;
-  }
+  const session: SessionRow = {
+    id: row.id,
+    user_id: row.user_id,
+    token_hash: row.token_hash,
+    csrf_secret: row.csrf_secret,
+    expires_at: row.expires_at,
+    created_at: row.created_at,
+  };
+
+  const user: User = {
+    id: row.user_id,
+    username: row.username,
+    password_hash: row.password_hash,
+    github_id: row.github_id,
+    github_login: row.github_login,
+    is_admin: row.is_admin,
+    created_at: row.created_at_user,
+  };
 
   const remaining = new Date(session.expires_at).getTime() - Date.now();
   if (remaining < sessionTtlMs() / 2) {
