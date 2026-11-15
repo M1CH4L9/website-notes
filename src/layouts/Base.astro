@@ -7,9 +7,11 @@ import '../styles/base.css';
 
 import figtreeLatin from '@fontsource-variable/figtree/files/figtree-latin-wght-normal.woff2?url';
 import figtreeLatinExt from '@fontsource-variable/figtree/files/figtree-latin-ext-wght-normal.woff2?url';
+import nunitoLatin from '@fontsource-variable/nunito/files/nunito-latin-wght-normal.woff2?url';
 
 import CatMark from '../components/CatMark.astro';
 import PawTrail from '../components/PawTrail.astro';
+import ThemeInit from '../components/ThemeInit.astro';
 import ThemeSwitch from '../components/ThemeSwitch.astro';
 import { site } from '../site.config';
 
@@ -24,13 +26,12 @@ const canonical = Astro.site ? new URL(Astro.url.pathname, Astro.site).href : un
 ---
 
 <!doctype html>
-<html lang={site.lang} data-theme="cute">
+<html lang={site.lang} data-theme="dark" data-cute="false">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>{pageTitle}</title>
     <meta name="description" content={description} />
-    <meta name="theme-color" content="#ffffff" />
     <meta property="og:title" content={title ?? site.title} />
     <meta property="og:description" content={description} />
     <meta property="og:type" content="website" />
@@ -40,33 +41,24 @@ const canonical = Astro.site ? new URL(Astro.url.pathname, Astro.site).href : un
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <link rel="preload" href={figtreeLatin} as="font" type="font/woff2" crossorigin />
     <link rel="preload" href={figtreeLatinExt} as="font" type="font/woff2" crossorigin />
-    <script is:inline>
-      // Ustawia zapamiętany motyw przed pierwszym rysowaniem strony, żeby nic nie mignęło.
-      (function () {
-        var theme = 'cute';
-        try {
-          var saved = localStorage.getItem('theme');
-          if (saved === 'cute' || saved === 'light' || saved === 'dark') theme = saved;
-        } catch (error) {}
-        document.documentElement.dataset.theme = theme;
-        if (theme === 'dark') {
-          var meta = document.querySelector('meta[name="theme-color"]');
-          if (meta) meta.setAttribute('content', '#151b23');
-        }
-      })();
-    </script>
+    <link rel="preload" href={nunitoLatin} as="font" type="font/woff2" crossorigin />
+    <ThemeInit />
     <slot name="head" />
   </head>
-  <body>
+  <body ontouchstart="">
+    {/* Pusty ontouchstart sprawia, że iOS Safari pokazuje stany :active po dotknięciu. */}
     <a class="skip-link" href="#tresc">Przejdź do treści</a>
 
     <header class="site-header">
       <div class="container site-header-inner">
-        <a class="brand" href="/" aria-label={`${site.title}, strona główna`}>
+        <a class="brand" href="/" aria-label={`${site.name}, strona główna`}>
           <CatMark class="brand-mark" />
-          <span class="brand-name">{site.title}</span>
+          <span class="brand-name">{site.name}<span class="brand-dot">.</span></span>
         </a>
-        <ThemeSwitch />
+        <div class="site-header-actions">
+          {/* Miejsce na kolejne elementy nagłówka (np. konto): dodawaj je tutaj, za ThemeSwitch. */}
+          <ThemeSwitch />
+        </div>
       </div>
     </header>
 
@@ -78,7 +70,7 @@ const canonical = Astro.site ? new URL(Astro.url.pathname, Astro.site).href : un
 
     <footer class="site-footer">
       <div class="container site-footer-inner">
-        <span>{site.title}</span>
+        <span class="footer-name">{site.title}</span>
         <PawTrail class="footer-paws" />
       </div>
     </footer>
