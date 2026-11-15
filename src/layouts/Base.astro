@@ -21,9 +21,10 @@ interface Props {
   title?: string;
   description?: string;
   wide?: boolean;
+  editor?: boolean;
 }
 
-const { title, description = site.description, wide = false } = Astro.props;
+const { title, description = site.description, wide = false, editor = false } = Astro.props;
 const pageTitle = title ? `${title} · ${site.title}` : site.title;
 const canonical = Astro.site ? new URL(Astro.url.pathname, Astro.site).href : undefined;
 const user = Astro.locals.user;
@@ -64,7 +65,7 @@ const serverCute = user?.pref_cute == null ? undefined : user.pref_cute ? '1' : 
     ontouchstart=""
     data-auth={user ? '1' : '0'}
     data-csrf={Astro.locals.csrf ?? undefined}
-    class:list={[wide && 'is-wide-page']}
+    class:list={[wide && 'is-wide-page', editor && 'is-editor-page']}
   >
     {/* Pusty ontouchstart sprawia, że iOS Safari pokazuje stany :active po dotknięciu. */}
     <a class="skip-link" href="#tresc">Przejdź do treści</a>
@@ -104,53 +105,51 @@ const serverCute = user?.pref_cute == null ? undefined : user.pref_cute ? '1' : 
               )
             }
           </div>
-          <button
-            type="button"
-            class="nav-menu-toggle"
-            aria-expanded="false"
-            aria-controls="nav-sheet"
-            data-nav-toggle
-          >
-            <span class="visually-hidden">Menu</span>
-            <span class="nav-menu-icon" aria-hidden="true"></span>
-          </button>
+          <div class="nav-menu-wrap">
+            <button
+              type="button"
+              class="nav-menu-toggle"
+              aria-expanded="false"
+              aria-controls="nav-menu"
+              aria-haspopup="true"
+              data-nav-toggle
+            >
+              <span class="visually-hidden">Menu</span>
+              <span class="nav-menu-icon" aria-hidden="true"></span>
+            </button>
+            <div class="nav-menu" id="nav-menu" data-nav-menu hidden>
+              <div class="nav-menu-backdrop" data-nav-close tabindex="-1"></div>
+              <div class="nav-menu-panel" role="menu" aria-label="Menu">
+                <nav class="nav-menu-links" aria-label="Konto">
+                  {
+                    user ? (
+                      <>
+                        <a class="nav-menu-item" role="menuitem" href="/moje/">Notatki</a>
+                        <a class="nav-menu-item" role="menuitem" href="/profil/">Konto</a>
+                        {user.is_admin && (
+                          <a class="nav-menu-item" role="menuitem" href="/admin/prosby/">Prośby</a>
+                        )}
+                        <form method="post" action="/api/auth/logout" class="nav-menu-form">
+                          {Astro.locals.csrf && <input type="hidden" name="csrf" value={Astro.locals.csrf} />}
+                          <button type="submit" class="nav-menu-item" role="menuitem">Wyloguj</button>
+                        </form>
+                      </>
+                    ) : (
+                      <>
+                        <a class="nav-menu-item" role="menuitem" href="/logowanie">Zaloguj</a>
+                        <a class="nav-menu-item nav-menu-item-accent" role="menuitem" href="/rejestracja">
+                          Zarejestruj
+                        </a>
+                      </>
+                    )
+                  }
+                </nav>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </header>
-
-    <div class="nav-sheet" id="nav-sheet" data-nav-sheet hidden>
-      <div class="nav-sheet-backdrop" data-nav-close tabindex="-1"></div>
-      <div class="nav-sheet-panel" role="dialog" aria-modal="true" aria-label="Menu">
-        <div class="nav-sheet-head">
-          <p class="nav-sheet-title">Menu</p>
-          <button type="button" class="button button-secondary header-action" data-nav-close>
-            Zamknij
-          </button>
-        </div>
-        <nav class="nav-sheet-links" aria-label="Konto">
-          {
-            user ? (
-              <>
-                <a class="button" href="/moje/">Notatki</a>
-                <a class="button button-secondary" href="/profil/">Konto</a>
-                {user.is_admin && (
-                  <a class="button button-secondary" href="/admin/prosby/">Prośby</a>
-                )}
-                <form method="post" action="/api/auth/logout">
-                  {Astro.locals.csrf && <input type="hidden" name="csrf" value={Astro.locals.csrf} />}
-                  <button type="submit" class="button button-secondary">Wyloguj</button>
-                </form>
-              </>
-            ) : (
-              <>
-                <a class="button button-secondary" href="/logowanie">Zaloguj</a>
-                <a class="button" href="/rejestracja">Zarejestruj</a>
-              </>
-            )
-          }
-        </nav>
-      </div>
-    </div>
 
     <main id="tresc" class="site-main">
       <div class:list={['container', wide && 'container-wide']}>
@@ -158,53 +157,95 @@ const serverCute = user?.pref_cute == null ? undefined : user.pref_cute ? '1' : 
       </div>
     </main>
 
-    <footer class="site-footer">
-      <div class="container site-footer-inner">
-        <span class="footer-name">{site.title}</span>
-        <PawTrail class="footer-paws" />
-      </div>
-    </footer>
+    {
+      !editor && (
+        <footer class="site-footer">
+          <div class="container site-footer-inner">
+            <span class="footer-name">{site.title}</span>
+            <PawTrail class="footer-paws" />
+          </div>
+        </footer>
+      )
+    }
 
     <script>
-      const g = window as Window & { __navSheetBooted?: boolean };
+      const g = window as Window & { __navMenuBooted?: boolean; __navMenuClosing?: boolean };
 
-      function closeNav() {
-        const sheet = document.querySelector<HTMLElement>('[data-nav-sheet]');
-        const toggle = document.querySelector<HTMLButtonElement>('[data-nav-toggle]');
-        if (!sheet || !toggle) return;
-        sheet.hidden = true;
-        document.body.classList.remove('nav-open');
-        toggle.setAttribute('aria-expanded', 'false');
+      function getParts() {
+        return {
+          menu: document.querySelector<HTMLElement>('[data-nav-menu]'),
+          toggle: document.querySelector<HTMLButtonElement>('[data-nav-toggle]'),
+        };
+      }
+
+      function closeNav(immediate = false) {
+        const { menu, toggle } = getParts();
+        if (!menu || !toggle || menu.hidden) return;
+
+        const finish = () => {
+          menu.hidden = true;
+          menu.classList.remove('is-open', 'is-closing');
+          document.body.classList.remove('nav-open');
+          toggle.setAttribute('aria-expanded', 'false');
+          g.__navMenuClosing = false;
+        };
+
+        if (immediate || window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+          finish();
+          return;
+        }
+
+        g.__navMenuClosing = true;
+        menu.classList.remove('is-open');
+        menu.classList.add('is-closing');
+        const panel = menu.querySelector<HTMLElement>('.nav-menu-panel');
+        const onEnd = (event: TransitionEvent) => {
+          if (event.target !== panel && event.target !== menu.querySelector('.nav-menu-backdrop')) return;
+          panel?.removeEventListener('transitionend', onEnd);
+          finish();
+        };
+        panel?.addEventListener('transitionend', onEnd);
+        window.setTimeout(finish, 280);
       }
 
       function openNav() {
-        const sheet = document.querySelector<HTMLElement>('[data-nav-sheet]');
-        const toggle = document.querySelector<HTMLButtonElement>('[data-nav-toggle]');
-        if (!sheet || !toggle) return;
-        sheet.hidden = false;
+        const { menu, toggle } = getParts();
+        if (!menu || !toggle) return;
+        g.__navMenuClosing = false;
+        menu.classList.remove('is-closing');
+        menu.hidden = false;
         document.body.classList.add('nav-open');
         toggle.setAttribute('aria-expanded', 'true');
+        window.requestAnimationFrame(() => {
+          window.requestAnimationFrame(() => menu.classList.add('is-open'));
+        });
       }
 
-      if (!g.__navSheetBooted) {
-        g.__navSheetBooted = true;
+      if (!g.__navMenuBooted) {
+        g.__navMenuBooted = true;
         document.addEventListener('click', (event) => {
           const target = event.target as HTMLElement | null;
           if (target?.closest('[data-nav-toggle]')) {
-            const sheet = document.querySelector<HTMLElement>('[data-nav-sheet]');
-            if (sheet?.hidden) openNav();
+            const { menu } = getParts();
+            if (!menu || g.__navMenuClosing) return;
+            if (menu.hidden) openNav();
             else closeNav();
             return;
           }
           if (target?.closest('[data-nav-close]')) {
+            closeNav();
+            return;
+          }
+          const { menu } = getParts();
+          if (menu && !menu.hidden && !target?.closest('.nav-menu-wrap')) {
             closeNav();
           }
         });
         document.addEventListener('keydown', (event) => {
           if (event.key === 'Escape') closeNav();
         });
-        document.addEventListener('astro:page-load', closeNav);
-        document.addEventListener('astro:before-swap', closeNav);
+        document.addEventListener('astro:page-load', () => closeNav(true));
+        document.addEventListener('astro:before-swap', () => closeNav(true));
       }
     </script>
   </body>

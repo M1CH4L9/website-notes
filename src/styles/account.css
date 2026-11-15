@@ -15,6 +15,11 @@
   margin-top: 1rem;
 }
 
+.note-copy-action .button {
+  font-weight: 700;
+  box-shadow: var(--shadow-card-hover);
+}
+
 .auth-panel {
   width: min(100%, 26rem);
   margin: 1.5rem auto 2.5rem;
@@ -30,8 +35,7 @@
 
 .auth-form,
 .note-form,
-.inline-form,
-.note-editor {
+.inline-form {
   display: grid;
   gap: 1rem;
 }
@@ -319,67 +323,158 @@ button.button-danger:hover {
   margin: 0;
 }
 
-/* Edytor Typst-like: szerszy workspace, cienki splitter, niezależne scrolle */
+/* Edytor Typst-like: viewport lock, kompaktowa meta, niezależne scrolle */
 
-.note-editor-meta {
+.editor-banner {
+  flex: none;
+  margin-bottom: 0.65rem;
+}
+
+.note-editor {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.note-editor-bar {
+  flex: none;
   display: grid;
-  gap: 0.85rem;
-  padding: 1rem 1.05rem;
+  gap: 0.5rem;
+  padding: 0.55rem 0.65rem;
   border: 1px solid var(--border);
   border-radius: var(--radius-m);
   background: var(--surface);
 }
 
-@media (min-width: 48rem) {
-  .note-editor-meta {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
+.note-editor-meta {
+  display: grid;
+  gap: 0.45rem;
+}
 
-  .note-editor-meta .field:last-child:nth-child(odd) {
-    grid-column: 1 / -1;
-  }
+.note-editor-meta .field-compact {
+  gap: 0.2rem;
+}
+
+.note-editor-meta .field-compact label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.note-editor-meta .field-compact input {
+  padding: 0.45rem 0.6rem;
+  font-size: 0.9375rem;
+}
+
+.note-editor-meta .field-compact .hint {
+  display: none;
 }
 
 .note-editor-actions {
   margin: 0;
+  justify-content: flex-end;
+}
+
+.note-editor-actions .button {
+  min-height: 2.35rem;
+  padding-inline: 0.9rem;
+}
+
+@media (min-width: 48rem) {
+  .note-editor-bar {
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: end;
+    gap: 0.75rem 1rem;
+    padding: 0.55rem 0.75rem;
+  }
+
+  .note-editor-meta {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.55rem 0.75rem;
+  }
+
+  .note-editor-meta .field-slug {
+    grid-column: 1 / -1;
+  }
+
+  .note-editor-actions {
+    padding-bottom: 0.05rem;
+  }
+}
+
+@media (min-width: 64rem) {
+  .note-editor-meta:has(.field-slug) {
+    grid-template-columns: minmax(0, 1.2fr) minmax(0, 1.2fr) minmax(0, 0.9fr);
+  }
+
+  .note-editor-meta:has(.field-slug) .field-slug {
+    grid-column: auto;
+  }
+}
+
+.note-editor-tabs {
+  flex: none;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.25rem;
+  padding: 0.25rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-m);
+  background: var(--surface-sunken);
+}
+
+.note-editor-tab {
+  min-height: 2.35rem;
+  padding: 0.45rem 0.7rem;
+  border: 0;
+  border-radius: var(--radius-s);
+  background: transparent;
+  color: var(--text-muted);
+  font: inherit;
+  font-weight: 700;
+  font-size: 0.875rem;
+  cursor: pointer;
+}
+
+.note-editor-tab.is-active {
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: var(--shadow-card);
 }
 
 .note-editor-workspace {
   --editor-split: 48%;
+  flex: 1;
+  min-height: 0;
   display: grid;
-  gap: 0.75rem;
-  min-height: 22rem;
+  gap: 0;
   border: 1px solid var(--border);
   border-radius: var(--radius-m);
   background: var(--surface);
   overflow: hidden;
 }
 
-@media (min-width: 64rem) {
-  .is-wide-page .site-main {
-    padding-block: 1.25rem 2rem;
-  }
-
-  .note-editor-workspace {
-    grid-template-columns: minmax(0, var(--editor-split)) 0.35rem minmax(0, 1fr);
-    gap: 0;
-    height: calc(100dvh - var(--header-height) - 13.5rem);
-    min-height: 28rem;
-    max-height: none;
-    border-radius: var(--radius-s);
-  }
-}
-
 .note-editor-pane {
-  display: flex;
+  display: none;
   flex-direction: column;
   min-width: 0;
   min-height: 0;
+  height: 100%;
+}
+
+.note-editor[data-mobile-pane='source'] .note-editor-source,
+.note-editor[data-mobile-pane='preview'] .note-editor-preview {
+  display: flex;
 }
 
 .note-editor-pane-label {
+  flex: none;
   margin: 0;
-  padding: 0.65rem 0.9rem 0.35rem;
+  padding: 0.55rem 0.85rem 0.3rem;
   color: var(--text-muted);
   font-size: 0.75rem;
   font-weight: 700;
@@ -390,9 +485,9 @@ button.button-danger:hover {
 .note-editor-source textarea {
   flex: 1;
   width: 100%;
-  min-height: 18rem;
+  min-height: 0;
   margin: 0;
-  padding: 0.55rem 0.9rem 0.9rem;
+  padding: 0.45rem 0.85rem 0.85rem;
   border: 0;
   border-radius: 0;
   background: transparent;
@@ -402,13 +497,7 @@ button.button-danger:hover {
   line-height: 1.55;
   resize: none;
   outline: none;
-}
-
-@media (min-width: 64rem) {
-  .note-editor-source textarea {
-    min-height: 0;
-    overflow: auto;
-  }
+  overflow: auto;
 }
 
 .note-editor-source textarea:focus {
@@ -418,22 +507,59 @@ button.button-danger:hover {
 
 .note-editor-preview-scroll {
   flex: 1;
-  min-height: 12rem;
-  padding: 0.35rem 0.95rem 1rem;
+  min-height: 0;
+  padding: 0.25rem 0.9rem 0.95rem;
   overflow: auto;
-}
-
-@media (min-width: 64rem) {
-  .note-editor-preview-scroll {
-    min-height: 0;
-  }
 }
 
 .note-editor-splitter {
   display: none;
 }
 
+.note-editor-source textarea,
+.note-editor-preview-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-strong) transparent;
+}
+
+.note-editor-source textarea::-webkit-scrollbar,
+.note-editor-preview-scroll::-webkit-scrollbar {
+  width: 0.55rem;
+  height: 0.55rem;
+}
+
+.note-editor-source textarea::-webkit-scrollbar-track,
+.note-editor-preview-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.note-editor-source textarea::-webkit-scrollbar-thumb,
+.note-editor-preview-scroll::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+  background-color: var(--border-strong);
+}
+
+.note-editor-source textarea::-webkit-scrollbar-thumb:hover,
+.note-editor-preview-scroll::-webkit-scrollbar-thumb:hover {
+  background-color: color-mix(in srgb, var(--accent) 55%, var(--border-strong));
+}
+
 @media (min-width: 64rem) {
+  .note-editor-tabs {
+    display: none;
+  }
+
+  .note-editor-workspace {
+    grid-template-columns: minmax(0, var(--editor-split)) 0.3rem minmax(0, 1fr);
+    border-radius: var(--radius-s);
+  }
+
+  .note-editor-pane {
+    display: flex;
+  }
+
   .note-editor-splitter {
     display: block;
     width: 100%;
@@ -455,18 +581,20 @@ button.button-danger:hover {
 }
 
 .editor-toast {
-  position: sticky;
-  top: 0.75rem;
-  z-index: 5;
+  position: fixed;
+  top: calc(var(--header-height) + 0.65rem);
+  left: 50%;
+  z-index: 30;
   width: fit-content;
-  max-width: min(100%, 28rem);
-  margin: 0 0 1rem;
+  max-width: min(100% - 2rem, 28rem);
+  margin: 0;
   padding: 0.65rem 0.9rem;
   border: 1px solid color-mix(in srgb, var(--callout-tip) 35%, var(--border));
   border-radius: var(--radius-s);
   background: color-mix(in srgb, var(--callout-tip) 14%, var(--surface));
   color: var(--text);
   box-shadow: var(--shadow-card-hover);
+  transform: translateX(-50%);
   transition:
     opacity 0.2s ease,
     transform 0.2s ease;
@@ -474,7 +602,7 @@ button.button-danger:hover {
 
 .editor-toast.is-leaving {
   opacity: 0;
-  transform: translateY(-0.35rem);
+  transform: translate(-50%, -0.35rem);
 }
 
 .publish-request-panel {

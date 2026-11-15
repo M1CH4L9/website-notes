@@ -13,13 +13,8 @@ if (!Astro.locals.user) {
 const error = Astro.url.searchParams.get('error');
 ---
 
-<Base title="Nowa notatka" description="Utwórz notatkę Markdown." wide>
-  <header class="page-head">
-    <h1 class="page-title">Nowa notatka</h1>
-    <p class="page-lead">Ten sam Markdown co w notatkach publicznych: kod, tabele, wzory, callouty.</p>
-  </header>
-
-  {error && <p class="form-error">{error}</p>}
+<Base title="Nowa notatka" description="Utwórz notatkę Markdown." wide editor>
+  {error && <p class="form-error editor-banner">{error}</p>}
 
   <NoteEditor
     action="/api/notes/create"
