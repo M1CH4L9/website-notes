@@ -16,10 +16,10 @@
   --font-mono: 'JetBrains Mono Variable', ui-monospace, 'SF Mono', 'Cascadia Code', Menlo, Consolas,
     monospace;
 
-  --page-width: 74rem;
+  --page-width: 84rem;
   --page-width-wide: 96rem;
   --page-gutter: 1rem;
-  --prose-width: 58rem;
+  --prose-width: 63rem;
   --header-height: 3.5rem;
   --footer-pad: 1.25rem;
 
@@ -43,7 +43,7 @@
 
 @media (min-width: 64rem) {
   :root {
-    --page-gutter: 2rem;
+    --page-gutter: 1.5rem;
   }
 }
 
