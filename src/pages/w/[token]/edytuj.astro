@@ -1,0 +1,341 @@
+---
+import 'katex/dist/katex.min.css';
+import '@fontsource-variable/jetbrains-mono/wght.css';
+import '../../../styles/prose.css';
+
+import Base from '../../../layouts/Base.astro';
+import { isDatabaseConfigured } from '../../../lib/server/env';
+import { getActiveShareByToken } from '../../../lib/server/shares';
+import { renderUserMarkdown } from '../../../markdown/user.mjs';
+
+export const prerender = false;
+
+const token = Astro.params.token!;
+
+if (!isDatabaseConfigured()) {
+  return new Response('Baza nie jest podłączona.', { status: 503 });
+}
+
+const share = await getActiveShareByToken(token);
+if (!share) {
+  return Astro.redirect('/404');
+}
+if (share.permission !== 'edit') {
+  return Astro.redirect(`/w/${token}/`);
+}
+
+const note = share.note;
+const { html } = await renderUserMarkdown(note.body);
+const csrf = Astro.locals.csrf || '';
+const displayName = Astro.locals.user?.username || 'Gość';
+---
+
+<Base title={`Wspólna edycja · ${note.title}`} description="Edycja przez link współdzielony." wide>
+  <header class="page-head share-editor-head">
+    <div>
+      <h1 class="page-title">Wspólna edycja</h1>
+      <p class="page-lead">
+        Link z uprawnieniem edycji · właściciel @{share.owner_username}
+      </p>
+    </div>
+    <div class="share-presence" data-share-presence aria-live="polite"></div>
+  </header>
+
+  <p class="hint share-sync-status" data-share-status>Synchronizacja…</p>
+
+  <form
+    class="note-editor"
+    data-share-editor
+    data-token={token}
+    data-revision={String(note.revision ?? 1)}
+    data-csrf={csrf}
+    data-display-name={displayName}
+  >
+    <div class="note-editor-meta">
+      <div class="field">
+        <label for="title">Tytuł</label>
+        <input id="title" name="title" required maxlength="200" value={note.title} data-share-title />
+      </div>
+      <div class="field">
+        <label for="description">Krótki opis</label>
+        <input
+          id="description"
+          name="description"
+          maxlength="500"
+          value={note.description ?? ''}
+          data-share-description
+        />
+      </div>
+    </div>
+
+    <div class="form-actions note-editor-actions">
+      <button class="button" type="button" data-share-save>Zapisz teraz</button>
+      <a class="button button-secondary" href={`/w/${token}/`}>Podgląd</a>
+    </div>
+
+    <div class="note-editor-workspace" data-editor-workspace>
+      <div class="note-editor-pane note-editor-source" data-editor-source>
+        <label class="note-editor-pane-label" for="body">Markdown</label>
+        <textarea id="body" name="body" spellcheck="true" data-share-body data-editor-body>{note.body}</textarea>
+      </div>
+
+      <div
+        class="note-editor-splitter"
+        data-editor-splitter
+        role="separator"
+        aria-orientation="vertical"
+        aria-label="Przeciągnij, żeby zmienić szerokość podglądu"
+        tabindex="0"
+      ></div>
+
+      <aside class="note-editor-pane note-editor-preview" data-editor-preview aria-label="Podgląd na żywo">
+        <p class="note-editor-pane-label">Podgląd</p>
+        <div class="note-editor-preview-scroll">
+          <div
+            class="prose"
+            data-editor-preview-html
+            set:html={html || '<p class="page-lead">Zacznij pisać, a tu pojawi się podgląd.</p>'}
+          />
+        </div>
+      </aside>
+    </div>
+  </form>
+
+  <script>
+    function clientId(): string {
+      const key = 'share-client-id';
+      try {
+        const existing = localStorage.getItem(key);
+        if (existing && existing.length >= 8) return existing;
+        const id = crypto.randomUUID().replace(/-/g, '').slice(0, 24);
+        localStorage.setItem(key, id);
+        return id;
+      } catch {
+        return `tmp-${Math.random().toString(36).slice(2, 12)}`;
+      }
+    }
+
+    function initShareEditor(root: HTMLElement) {
+      if (root.dataset.ready === '1') return;
+      root.dataset.ready = '1';
+
+      const token = root.dataset.token || '';
+      let revision = Number(root.dataset.revision || '1');
+      const csrf = root.dataset.csrf || '';
+      const displayName = root.dataset.displayName || 'Gość';
+      const cid = clientId();
+
+      const titleEl = root.querySelector<HTMLInputElement>('[data-share-title]');
+      const descEl = root.querySelector<HTMLInputElement>('[data-share-description]');
+      const bodyEl = root.querySelector<HTMLTextAreaElement>('[data-share-body]');
+      const preview = root.querySelector<HTMLElement>('[data-editor-preview-html]');
+      const workspace = root.querySelector<HTMLElement>('[data-editor-workspace]');
+      const splitter = root.querySelector<HTMLElement>('[data-editor-splitter]');
+      const sourcePane = root.querySelector<HTMLElement>('[data-editor-source]');
+      const status = document.querySelector<HTMLElement>('[data-share-status]');
+      const presence = document.querySelector<HTMLElement>('[data-share-presence]');
+      const saveBtn = root.querySelector<HTMLButtonElement>('[data-share-save]');
+      if (!titleEl || !descEl || !bodyEl || !preview || !workspace || !splitter || !sourcePane) return;
+
+      let dirty = false;
+      let saving = false;
+      let previewTimer = 0;
+      let previewReq = 0;
+      let saveTimer = 0;
+      const emptyHtml = '<p class="page-lead">Zacznij pisać, a tu pojawi się podgląd.</p>';
+
+      const setStatus = (text: string) => {
+        if (status) status.textContent = text;
+      };
+
+      const renderPresence = (rows: { client_id: string; display_name: string; can_edit: boolean }[]) => {
+        if (!presence) return;
+        const others = rows.filter((r) => r.client_id !== cid);
+        if (others.length === 0) {
+          presence.textContent = 'Nikt inny nie edytuje';
+          return;
+        }
+        presence.textContent =
+          'Obecni: ' +
+          others.map((r) => `${r.display_name}${r.can_edit ? '' : ' (odczyt)'}`).join(', ');
+      };
+
+      const renderPreview = async () => {
+        const value = bodyEl.value;
+        if (!value.trim()) {
+          preview.innerHTML = emptyHtml;
+          return;
+        }
+        const id = ++previewReq;
+        try {
+          const response = await fetch('/api/notes/preview', {
+            method: 'POST',
+            headers: { 'content-type': 'application/json', accept: 'application/json' },
+            body: JSON.stringify({ body: value }),
+            credentials: 'same-origin',
+          });
+          if (!response.ok) return;
+          const data = (await response.json()) as { html?: string };
+          if (id !== previewReq) return;
+          if (typeof data.html === 'string') preview.innerHTML = data.html;
+        } catch {}
+      };
+
+      const schedulePreview = () => {
+        window.clearTimeout(previewTimer);
+        previewTimer = window.setTimeout(renderPreview, 280);
+      };
+
+      const markDirty = () => {
+        dirty = true;
+        setStatus('Lokalne zmiany… zapis za chwilę');
+        window.clearTimeout(saveTimer);
+        saveTimer = window.setTimeout(() => {
+          void save();
+        }, 1200);
+      };
+
+      const applyRemote = (data: {
+        revision: number;
+        title: string;
+        description: string | null;
+        body: string;
+      }) => {
+        revision = data.revision;
+        root.dataset.revision = String(revision);
+        titleEl.value = data.title;
+        descEl.value = data.description || '';
+        bodyEl.value = data.body;
+        dirty = false;
+        schedulePreview();
+      };
+
+      const save = async () => {
+        if (saving || !dirty) return;
+        saving = true;
+        setStatus('Zapisywanie…');
+        try {
+          const response = await fetch('/api/notes/share-sync', {
+            method: 'POST',
+            headers: { 'content-type': 'application/json', accept: 'application/json' },
+            credentials: 'same-origin',
+            body: JSON.stringify({
+              token,
+              revision,
+              title: titleEl.value,
+              description: descEl.value,
+              body: bodyEl.value,
+              client_id: cid,
+              display_name: displayName,
+              csrf,
+            }),
+          });
+          const data = await response.json();
+          if (response.status === 409 && data.conflict) {
+            applyRemote(data);
+            renderPresence(data.presence || []);
+            setStatus('Konflikt: wczytano nowszą wersję z serwera');
+            return;
+          }
+          if (!response.ok) {
+            setStatus(typeof data.error === 'string' ? data.error : 'Błąd zapisu');
+            return;
+          }
+          revision = Number(data.revision);
+          root.dataset.revision = String(revision);
+          dirty = false;
+          renderPresence(data.presence || []);
+          setStatus('Zapisano · rev ' + revision);
+        } catch {
+          setStatus('Brak sieci przy zapisie');
+        } finally {
+          saving = false;
+        }
+      };
+
+      const poll = async () => {
+        if (document.hidden) return;
+        try {
+          const url = new URL('/api/notes/share-sync', window.location.origin);
+          url.searchParams.set('token', token);
+          url.searchParams.set('client_id', cid);
+          url.searchParams.set('display_name', displayName);
+          const response = await fetch(url, {
+            credentials: 'same-origin',
+            headers: { accept: 'application/json' },
+          });
+          if (!response.ok) return;
+          const data = await response.json();
+          renderPresence(data.presence || []);
+          if (!dirty && Number(data.revision) > revision) {
+            applyRemote(data);
+            setStatus('Zsynchronizowano z innymi · rev ' + revision);
+          } else if (!dirty) {
+            setStatus('Na bieżąco · rev ' + revision);
+          }
+        } catch {}
+      };
+
+      titleEl.addEventListener('input', markDirty);
+      descEl.addEventListener('input', markDirty);
+      bodyEl.addEventListener('input', () => {
+        markDirty();
+        schedulePreview();
+      });
+      saveBtn?.addEventListener('click', () => {
+        dirty = true;
+        void save();
+      });
+
+      // Splitter (jak w NoteEditor)
+      const storageKey = 'note-editor-split';
+      const applySplit = (ratio: number) => {
+        const clamped = Math.min(0.72, Math.max(0.28, ratio));
+        workspace.style.setProperty('--editor-split', `${(clamped * 100).toFixed(2)}%`);
+        try {
+          localStorage.setItem(storageKey, String(clamped));
+        } catch {}
+      };
+      try {
+        const saved = Number(localStorage.getItem(storageKey));
+        if (saved >= 0.28 && saved <= 0.72) applySplit(saved);
+      } catch {}
+
+      let dragging = false;
+      const onPointerMove = (event: PointerEvent) => {
+        if (!dragging) return;
+        const rect = workspace.getBoundingClientRect();
+        if (rect.width < 40) return;
+        applySplit((event.clientX - rect.left) / rect.width);
+      };
+      const stopDrag = () => {
+        if (!dragging) return;
+        dragging = false;
+        workspace.classList.remove('is-resizing');
+        window.removeEventListener('pointermove', onPointerMove);
+        window.removeEventListener('pointerup', stopDrag);
+      };
+      splitter.addEventListener('pointerdown', (event) => {
+        if (window.matchMedia('(max-width: 63.99rem)').matches) return;
+        dragging = true;
+        workspace.classList.add('is-resizing');
+        splitter.setPointerCapture(event.pointerId);
+        window.addEventListener('pointermove', onPointerMove);
+        window.addEventListener('pointerup', stopDrag);
+        event.preventDefault();
+      });
+
+      window.setInterval(() => {
+        void poll();
+      }, 2500);
+      void poll();
+      if (bodyEl.value.trim()) schedulePreview();
+    }
+
+    const boot = () => {
+      document.querySelectorAll<HTMLElement>('[data-share-editor]').forEach(initShareEditor);
+    };
+    boot();
+    document.addEventListener('astro:page-load', boot);
+  </script>
+</Base>

@@ -13,6 +13,7 @@ import { getNoteByUserAndSlug } from '../../../lib/server/user-notes';
 import { getPublicationForSourceNote } from '../../../lib/server/publication-notes';
 import { latestRequestForNote } from '../../../lib/server/publications';
 import { listSubjectOptions } from '../../../lib/server/subject-options';
+import { listSharesForNote } from '../../../lib/server/shares';
 import { renderUserMarkdown } from '../../../markdown/user.mjs';
 
 if (!Astro.locals.user) {
@@ -28,12 +29,15 @@ if (!note) {
 const { html, headings } = await renderUserMarkdown(note.body);
 const request = await latestRequestForNote(note.id);
 const publication = await getPublicationForSourceNote(note.id);
+const shares = await listSharesForNote(note.id);
 const subjects = await listSubjectOptions();
 const error = Astro.url.searchParams.get('error');
 const ok = Astro.url.searchParams.get('ok');
+const newShareToken = Astro.url.searchParams.get('share');
 const pending = request?.status === 'pending';
 const canPublish = !publication && !pending;
 const canUpdate = Boolean(publication) && !pending;
+const origin = Astro.url.origin;
 ---
 
 <Base title={note.title} description={note.description ?? undefined}>
@@ -269,6 +273,74 @@ const canUpdate = Boolean(publication) && !pending;
       </section>
     )
   }
+
+  <section class="publish-request-panel">
+    <h2 class="publish-request-title">Udostępnij</h2>
+    <p class="publish-request-lead">
+      Link do prywatnej notatki (nie publikuje na homepage). Odczyt bez konta; edycja z tokenem edit
+      (konto opcjonalne, wtedy widać nick przy obecności).
+    </p>
+
+    {
+      newShareToken && (
+        <p class="form-ok">
+          Nowy link:{' '}
+          <a href={`/w/${newShareToken}/`}>{origin}/w/{newShareToken}/</a>
+        </p>
+      )
+    }
+
+    <form class="auth-form" method="post" action="/api/notes/share-create">
+      <CsrfField />
+      <input type="hidden" name="slug" value={note.slug} />
+      <div class="field">
+        <label for="permission">Uprawnienie</label>
+        <select id="permission" name="permission">
+          <option value="read">Tylko odczyt</option>
+          <option value="edit">Edycja</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="label">Etykieta (opcjonalnie)</label>
+        <input id="label" name="label" maxlength="80" placeholder="np. grupa lab" />
+      </div>
+      <button class="button" type="submit">Generuj link</button>
+    </form>
+
+    {
+      shares.length > 0 && (
+        <ul class="share-list">
+          {shares.map((share) => (
+            <li class="share-list-item">
+              <div>
+                <a href={`/w/${share.token}/`}>
+                  /w/{share.token}/
+                </a>
+                <div class="my-note-list-meta">
+                  <span class="badge">{share.permission === 'edit' ? 'edycja' : 'odczyt'}</span>
+                  {share.label && <span>{share.label}</span>}
+                  <span>
+                    <time datetime={isoDate(share.created_at)}>{formatDate(share.created_at)}</time>
+                  </span>
+                  {share.permission === 'edit' && (
+                    <a href={`/w/${share.token}/edytuj/`}>Otwórz edytor</a>
+                  )}
+                </div>
+              </div>
+              <form method="post" action="/api/notes/share-revoke">
+                <CsrfField />
+                <input type="hidden" name="slug" value={note.slug} />
+                <input type="hidden" name="share_id" value={share.id} />
+                <button class="button button-danger" type="submit">
+                  Unieważnij
+                </button>
+              </form>
+            </li>
+          ))}
+        </ul>
+      )
+    }
+  </section>
 
   <NoteScripts />
 
