@@ -25,7 +25,7 @@ export function normalizeUsername(raw: string): string {
 
 export function assertUsername(username: string): string | null {
   if (!/^[a-z0-9_]{3,32}$/.test(username)) {
-    return 'Nazwa użytkownika: 3–32 znaki, tylko małe litery, cyfry i _.';
+    return 'Nazwa użytkownika: 3-32 znaki, tylko małe litery, cyfry i _.';
   }
   return null;
 }

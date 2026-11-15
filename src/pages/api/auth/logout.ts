@@ -20,7 +20,7 @@ export const POST: APIRoute = async (context) => {
         await destroySession(auth.token);
       }
     } else {
-      // Brak formularza — i tak wyloguj przy poprawnej sesji (np. fetch).
+      // Brak formularza - i tak wyloguj przy poprawnej sesji (np. fetch).
       await destroySession(context.cookies.get(sessionCookieName())?.value);
     }
   } else {

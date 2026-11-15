@@ -41,11 +41,7 @@ export const POST: APIRoute = async (context) => {
       label: readFormString(form, 'label'),
     });
     return redirect(
-      `/moje/${slug}/?ok=` +
-        encodeURIComponent(
-          `Utworzono link ${permission === 'edit' ? 'do edycji' : 'do odczytu'}: /w/${share.token}/`,
-        ) +
-        `&share=${encodeURIComponent(share.token)}`,
+      `/moje/${slug}/?share=${encodeURIComponent(share.token)}&perm=${encodeURIComponent(permission)}`,
     );
   } catch (error) {
     return redirect(

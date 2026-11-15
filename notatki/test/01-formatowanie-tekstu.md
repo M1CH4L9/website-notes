@@ -4,7 +4,7 @@ description: Przykładowa notatka pokazująca nagłówki, listy, cytaty, tabele,
 updated: 2026-11-14
 ---
 
-To jest notatka przykładowa. Pokazuje, jak wyglądają podstawowe elementy Markdowna, i można ją usunąć razem z pozostałymi przykładami.
+To jest notatka przykładowa z przedmiotu Test. Pokazuje, jak wyglądają podstawowe elementy Markdowna, i można ją usunąć razem z pozostałymi przykładami.
 
 ## Tekst
 

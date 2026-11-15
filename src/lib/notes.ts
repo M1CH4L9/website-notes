@@ -155,7 +155,7 @@ export async function getSubjects(): Promise<Subject[]> {
 
         const clash = subject.notes.some((n) => n.slug === pub.slug && n.entry);
         if (clash) {
-          // Nie nadpisuj notatki z pliku — publikacja z kolizją slug zostaje pominięta na liście.
+          // Nie nadpisuj notatki z pliku - publikacja z kolizją slug zostaje pominięta na liście.
           continue;
         }
         const withoutOld = subject.notes.filter(

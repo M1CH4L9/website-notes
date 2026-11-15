@@ -1,6 +1,6 @@
 import { randomBytes, scrypt as scryptCallback, timingSafeEqual } from 'node:crypto';
 
-/** scrypt N=2^15, r=8, p=1 — mieści się w limicie pamięci Node/Vercel (~32–64 MB). */
+/** scrypt N=2^15, r=8, p=1 - mieści się w limicie pamięci Node/Vercel (~32-64 MB). */
 const N = 1 << 15;
 const R = 8;
 const P = 1;
