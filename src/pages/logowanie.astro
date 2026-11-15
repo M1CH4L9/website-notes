@@ -29,9 +29,11 @@ const githubOk = githubConfigured();
 
     {error && <p class="form-error">{error}</p>}
 
-    <form class="auth-form" method="post" action="/api/auth/login">
+    <form class="auth-form" method="post" action="/api/auth/login" data-auth-prefs>
       <CsrfField />
       <input type="hidden" name="next" value={next} />
+      <input type="hidden" name="theme" value="dark" data-pref-theme />
+      <input type="hidden" name="cute" value="0" data-pref-cute />
       <div class="honeypot" aria-hidden="true">
         <label>
           Strona
@@ -75,4 +77,25 @@ const githubOk = githubConfigured();
       Nie masz konta? <a href={`/rejestracja?next=${encodeURIComponent(next)}`}>Zarejestruj się</a>
     </p>
   </div>
+
+  <script>
+    function fillPrefs(form: HTMLFormElement) {
+      try {
+        const theme = localStorage.getItem('theme');
+        const cute = localStorage.getItem('cute');
+        const themeInput = form.querySelector<HTMLInputElement>('[data-pref-theme]');
+        const cuteInput = form.querySelector<HTMLInputElement>('[data-pref-cute]');
+        if (themeInput && (theme === 'dark' || theme === 'light')) themeInput.value = theme;
+        if (cuteInput && (cute === '0' || cute === '1')) cuteInput.value = cute;
+      } catch {}
+    }
+
+    const boot = () => {
+      for (const form of document.querySelectorAll<HTMLFormElement>('[data-auth-prefs]')) {
+        fillPrefs(form);
+      }
+    };
+    boot();
+    document.addEventListener('astro:page-load', boot);
+  </script>
 </Base>

@@ -1,0 +1,139 @@
+---
+import Base from '../../layouts/Base.astro';
+import AccountNav from '../../components/AccountNav.astro';
+import CsrfField from '../../components/account/CsrfField.astro';
+import { githubConfigured } from '../../lib/server/github';
+import { MIN_PASSWORD_LENGTH } from '../../lib/server/password';
+import { formatDate, isoDate } from '../../lib/format';
+
+if (!Astro.locals.user) {
+  return Astro.redirect('/logowanie?next=' + encodeURIComponent('/profil/'));
+}
+
+const user = Astro.locals.user;
+const error = Astro.url.searchParams.get('error');
+const ok = Astro.url.searchParams.get('ok');
+const githubOk = githubConfigured();
+const hasPassword = Boolean(user.password_hash);
+---
+
+<Base title="Konto" description="Dane konta, hasło i powiązania.">
+  <header class="page-head">
+    <h1 class="page-title">Konto</h1>
+    <p class="page-lead page-meta">
+      <span>
+        Zalogowano jako <strong>{user.username}</strong>
+      </span>
+      {user.is_admin && <span class="badge">admin</span>}
+    </p>
+  </header>
+
+  <div class="account-toolbar">
+    <AccountNav current="profile" />
+  </div>
+
+  {error && <p class="form-error">{error}</p>}
+  {ok && <p class="form-ok">{ok}</p>}
+
+  <section class="profile-section">
+    <h2 class="profile-section-title">Dane</h2>
+    <dl class="profile-facts">
+      <div>
+        <dt>Nazwa</dt>
+        <dd>{user.username}</dd>
+      </div>
+      <div>
+        <dt>Konto od</dt>
+        <dd>
+          <time datetime={isoDate(user.created_at)}>{formatDate(user.created_at)}</time>
+        </dd>
+      </div>
+      <div>
+        <dt>GitHub</dt>
+        <dd>
+          {
+            user.github_login ? (
+              <a href={`https://github.com/${user.github_login}`} rel="noopener" target="_blank">
+                @{user.github_login}
+              </a>
+            ) : (
+              'niepowiązane'
+            )
+          }
+        </dd>
+      </div>
+    </dl>
+    {
+      !user.github_id && githubOk && (
+        <p class="form-actions">
+          <a class="button button-secondary" href="/auth/github?next=/profil/">
+            Połącz z GitHubem
+          </a>
+        </p>
+      )
+    }
+  </section>
+
+  <section class="profile-section">
+    <h2 class="profile-section-title">{hasPassword ? 'Zmiana hasła' : 'Ustaw hasło'}</h2>
+    <p class="page-lead">
+      {
+        hasPassword
+          ? 'Nowe hasło obowiązuje od razu po zapisaniu.'
+          : 'Konto powstało przez GitHub. Możesz dodać hasło do logowania nazwą.'
+      }
+    </p>
+    <form class="auth-form" method="post" action="/api/auth/password">
+      <CsrfField />
+      {
+        hasPassword && (
+          <div class="field">
+            <label for="current_password">Obecne hasło</label>
+            <input
+              id="current_password"
+              name="current_password"
+              type="password"
+              autocomplete="current-password"
+              required
+              minlength={MIN_PASSWORD_LENGTH}
+            />
+          </div>
+        )
+      }
+      <div class="field">
+        <label for="password">Nowe hasło</label>
+        <input
+          id="password"
+          name="password"
+          type="password"
+          autocomplete="new-password"
+          required
+          minlength={MIN_PASSWORD_LENGTH}
+        />
+        <p class="hint">Minimum {MIN_PASSWORD_LENGTH} znaków.</p>
+      </div>
+      <div class="field">
+        <label for="password_confirm">Powtórz nowe hasło</label>
+        <input
+          id="password_confirm"
+          name="password_confirm"
+          type="password"
+          autocomplete="new-password"
+          required
+          minlength={MIN_PASSWORD_LENGTH}
+        />
+      </div>
+      <div class="form-actions">
+        <button class="button" type="submit">Zapisz hasło</button>
+      </div>
+    </form>
+  </section>
+
+  <section class="profile-section">
+    <h2 class="profile-section-title">Wygląd</h2>
+    <p class="page-lead">
+      Motyw i tryb cute zapisują się w tej przeglądarce. Po zalogowaniu trafiają też na konto, żeby
+      wrócić na innym urządzeniu.
+    </p>
+  </section>
+</Base>

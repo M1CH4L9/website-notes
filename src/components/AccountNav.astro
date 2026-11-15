@@ -1,0 +1,27 @@
+---
+interface Props {
+  current: 'notes' | 'profile' | 'requests';
+}
+
+const { current } = Astro.props;
+const user = Astro.locals.user;
+---
+
+<nav class="account-nav" aria-label="Konto">
+  <a class:list={['button', current === 'notes' ? null : 'button-secondary']} href="/moje/">
+    Notatki
+  </a>
+  <a class:list={['button', current === 'profile' ? null : 'button-secondary']} href="/profil/">
+    Konto
+  </a>
+  {
+    user?.is_admin && (
+      <a
+        class:list={['button', current === 'requests' ? null : 'button-secondary']}
+        href="/admin/prosby/"
+      >
+        Prośby
+      </a>
+    )
+  }
+</nav>

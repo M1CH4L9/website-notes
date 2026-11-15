@@ -4,8 +4,11 @@
  * zanim przeglądarka cokolwiek narysuje, więc przy ładowaniu nic nie miga.
  *
  * localStorage:
- *   theme = "dark" | "light"   (brak wpisu: dark)
+ *   theme = "dark" | "light"   (brak wpisu: dark, albo pref z konta gdy jest data-server-*)
  *   cute  = "1" | "0"          (brak wpisu: wyłączony)
+ *
+ * ClientRouter podmienia <html> z atrybutami z SSR (zawsze dark). Dlatego przy
+ * astro:before-swap przepisujemy motyw na nowy dokument zanim wejdzie na ekran.
  *
  * Te same klucze zapisuje ThemeSwitch.astro. Kolory paska przeglądarki (theme-color)
  * odpowiadają --surface z src/styles/tokens.css.
@@ -15,28 +18,49 @@
 <meta name="theme-color" content="#151b23" />
 <script is:inline>
   (function () {
-    var theme = 'dark';
-    var cute = false;
-    try {
-      var savedTheme = localStorage.getItem('theme');
-      var savedCute = localStorage.getItem('cute');
-      // Pierwsza wersja strony miała trzeci motyw "cute". Odpowiada mu jasny z włączonym trybem cute.
-      if (savedTheme === 'cute') {
-        savedTheme = 'light';
-        savedCute = '1';
-        localStorage.setItem('theme', savedTheme);
-        localStorage.setItem('cute', savedCute);
-      }
-      if (savedTheme === 'light' || savedTheme === 'dark') theme = savedTheme;
-      cute = savedCute === '1';
-    } catch (error) {}
-
-    var root = document.documentElement;
-    root.dataset.theme = theme;
-    root.dataset.cute = String(cute);
-
     var colors = { dark: '#151b23', light: '#ffffff', 'cute-dark': '#251822', 'cute-light': '#ffffff' };
-    var meta = document.querySelector('meta[name="theme-color"]');
-    if (meta) meta.setAttribute('content', colors[(cute ? 'cute-' : '') + theme]);
+
+    function readPrefs(root) {
+      var theme = 'dark';
+      var cute = false;
+      try {
+        var savedTheme = localStorage.getItem('theme');
+        var savedCute = localStorage.getItem('cute');
+        if (savedTheme === 'cute') {
+          savedTheme = 'light';
+          savedCute = '1';
+          localStorage.setItem('theme', savedTheme);
+          localStorage.setItem('cute', savedCute);
+        }
+        // Brak lokalnego wpisu: weź preferencje z konta (SSR), jeśli są.
+        if (savedTheme == null && root && (root.getAttribute('data-server-theme') === 'light' || root.getAttribute('data-server-theme') === 'dark')) {
+          savedTheme = root.getAttribute('data-server-theme');
+          localStorage.setItem('theme', savedTheme);
+        }
+        if (savedCute == null && root && root.hasAttribute('data-server-cute')) {
+          savedCute = root.getAttribute('data-server-cute') === '1' ? '1' : '0';
+          localStorage.setItem('cute', savedCute);
+        }
+        if (savedTheme === 'light' || savedTheme === 'dark') theme = savedTheme;
+        cute = savedCute === '1';
+      } catch (error) {}
+      return { theme: theme, cute: cute };
+    }
+
+    function applyTo(root) {
+      if (!root) return;
+      var prefs = readPrefs(root);
+      root.setAttribute('data-theme', prefs.theme);
+      root.setAttribute('data-cute', String(prefs.cute));
+      var doc = root.ownerDocument || document;
+      var meta = doc.querySelector('meta[name="theme-color"]');
+      if (meta) meta.setAttribute('content', colors[(prefs.cute ? 'cute-' : '') + prefs.theme]);
+    }
+
+    applyTo(document.documentElement);
+
+    document.addEventListener('astro:before-swap', function (event) {
+      applyTo(event.newDocument.documentElement);
+    });
   })();
 </script>

@@ -6,7 +6,9 @@ import {
   assertUsername,
   createUserWithPassword,
   findUserByUsername,
+  normalizeThemePreference,
   normalizeUsername,
+  updateUserPreferences,
 } from '../../../lib/server/users';
 import { isDatabaseConfigured } from '../../../lib/server/env';
 import { parseForm, readFormString, redirect } from '../../../lib/server/http';
@@ -41,7 +43,10 @@ export const POST: APIRoute = async (context) => {
 
   const username = normalizeUsername(readFormString(form, 'username'));
   const password = readFormString(form, 'password');
+  const passwordConfirm = readFormString(form, 'password_confirm');
   const next = safeNext(readFormString(form, 'next'));
+  const theme = normalizeThemePreference(readFormString(form, 'theme')) ?? 'dark';
+  const cute = readFormString(form, 'cute') === '1';
 
   const usernameError = assertUsername(username);
   if (usernameError) {
@@ -51,6 +56,9 @@ export const POST: APIRoute = async (context) => {
   if (passwordError) {
     return redirect('/rejestracja?error=' + encodeURIComponent(passwordError));
   }
+  if (password !== passwordConfirm) {
+    return redirect('/rejestracja?error=' + encodeURIComponent('Hasła nie są takie same.'));
+  }
 
   const existing = await findUserByUsername(username);
   if (existing) {
@@ -59,6 +67,7 @@ export const POST: APIRoute = async (context) => {
 
   const passwordHash = await hashPassword(password);
   const user = await createUserWithPassword(username, passwordHash);
+  await updateUserPreferences(user.id, theme, cute);
   const { token } = await createSession(user.id);
   setSessionCookie(context.cookies, token);
   return redirect(next);

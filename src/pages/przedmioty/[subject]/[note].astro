@@ -48,8 +48,11 @@ const { Content, headings } = await render(note.entry);
             </p>
           )
         }
-        <p class="page-meta">
-          <a href={`/moje/z-publicznej?subject=${subject.slug}&note=${note.slug}`}>
+        <p class="page-meta note-copy-action">
+          <a
+            class="button button-secondary"
+            href={`/moje/z-publicznej?subject=${subject.slug}&note=${note.slug}`}
+          >
             Skopiuj do moich notatek
           </a>
         </p>
