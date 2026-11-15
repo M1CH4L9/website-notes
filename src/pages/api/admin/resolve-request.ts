@@ -39,7 +39,7 @@ export const POST: APIRoute = async (context) => {
     const pub = result.publication;
     const okMsg = accept
       ? pub
-        ? `Zaakceptowano — /przedmioty/${pub.subject_slug}/${pub.slug}/`
+        ? `Zaakceptowano - /przedmioty/${pub.subject_slug}/${pub.slug}/`
         : 'Zaakceptowano.'
       : 'Odrzucono prośbę.';
     return redirect(`${back}&ok=` + encodeURIComponent(okMsg));

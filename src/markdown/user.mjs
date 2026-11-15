@@ -143,7 +143,7 @@ async function getProcessor() {
         [rehypeSanitize, schema],
       ],
       shikiConfig,
-      // Jak w astro.config — bez smartypants (pauzy z "--").
+      // Jak w astro.config - bez smartypants (pauzy z "--").
       smartypants: false,
       remarkRehype: {
         footnoteLabel: 'Przypisy',

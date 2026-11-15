@@ -20,13 +20,13 @@ if (!url) {
     console.error('[migrate] Ustaw DATABASE_URL (albo POSTGRES_URL).');
     process.exit(1);
   }
-  console.log('[migrate] Brak DATABASE_URL / POSTGRES_URL — pomijam migracje.');
+  console.log('[migrate] Brak DATABASE_URL / POSTGRES_URL - pomijam migracje.');
   process.exit(0);
 }
 
 // Na preview bez osobnej bazy nie ruszamy produkcji.
 if (isVercel && process.env.VERCEL_ENV && process.env.VERCEL_ENV !== 'production') {
-  console.log(`[migrate] VERCEL_ENV=${process.env.VERCEL_ENV} — pomijam migracje (tylko production).`);
+  console.log(`[migrate] VERCEL_ENV=${process.env.VERCEL_ENV} - pomijam migracje (tylko production).`);
   process.exit(0);
 }
 

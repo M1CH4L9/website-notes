@@ -49,7 +49,7 @@ export function setSessionCookie(cookies: AstroCookies, token: string) {
     secure: isProd(),
     expires: new Date(Date.now() + sessionTtlMs()),
   });
-  // Podpowiedź dla UI (nie sekret) — zostaje, gdyby kiedyś wróciły strony prerenderowane.
+  // Podpowiedź dla UI (nie sekret) - zostaje, gdyby kiedyś wróciły strony prerenderowane.
   cookies.set('konto', '1', {
     path: '/',
     httpOnly: false,

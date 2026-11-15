@@ -34,13 +34,34 @@ const subjects = await listSubjectOptions();
 const error = Astro.url.searchParams.get('error');
 const ok = Astro.url.searchParams.get('ok');
 const newShareToken = Astro.url.searchParams.get('share');
+const newSharePerm = Astro.url.searchParams.get('perm') === 'edit' ? 'edit' : 'read';
 const pending = request?.status === 'pending';
 const canPublish = !publication && !pending;
 const canUpdate = Boolean(publication) && !pending;
 const origin = Astro.url.origin;
+const newShareUrl = newShareToken ? `${origin}/w/${newShareToken}/` : null;
 ---
 
 <Base title={note.title} description={note.description ?? undefined}>
+  {
+    newShareUrl && (
+        <div class="editor-toast share-toast" data-share-toast role="status">
+        <p class="share-toast-text">
+          Utworzono link {newSharePerm === 'edit' ? 'do edycji' : 'do odczytu'}:{' '}
+          <a href={newShareUrl}>{newShareUrl}</a>
+        </p>
+        <button
+          class="button button-secondary share-copy-button"
+          type="button"
+          data-share-copy
+          data-share-copy-url={newShareUrl}
+        >
+          Kopiuj
+        </button>
+      </div>
+    )
+  }
+
   <div class="account-toolbar">
     <nav class="account-nav">
       <a class="button button-secondary" href="/moje/">Wróć</a>
@@ -128,7 +149,7 @@ const origin = Astro.url.origin;
                 {subjects.map((s) => (
                   <option value={s.slug}>
                     {s.title}
-                    {s.fullName ? ` — ${s.fullName}` : ''}
+                    {s.fullName ? ` - ${s.fullName}` : ''}
                   </option>
                 ))}
               </select>
@@ -210,7 +231,7 @@ const origin = Astro.url.origin;
                   {subjects.map((s) => (
                     <option value={s.slug} selected={s.slug === publication.subject_slug}>
                       {s.title}
-                      {s.fullName ? ` — ${s.fullName}` : ''}
+                      {s.fullName ? ` - ${s.fullName}` : ''}
                     </option>
                   ))}
                 </select>
@@ -281,15 +302,6 @@ const origin = Astro.url.origin;
       (konto opcjonalne, wtedy widać nick przy obecności).
     </p>
 
-    {
-      newShareToken && (
-        <p class="form-ok">
-          Nowy link:{' '}
-          <a href={`/w/${newShareToken}/`}>{origin}/w/{newShareToken}/</a>
-        </p>
-      )
-    }
-
     <form class="auth-form" method="post" action="/api/notes/share-create">
       <CsrfField />
       <input type="hidden" name="slug" value={note.slug} />
@@ -310,33 +322,44 @@ const origin = Astro.url.origin;
     {
       shares.length > 0 && (
         <ul class="share-list">
-          {shares.map((share) => (
-            <li class="share-list-item">
-              <div>
-                <a href={`/w/${share.token}/`}>
-                  /w/{share.token}/
-                </a>
-                <div class="my-note-list-meta">
-                  <span class="badge">{share.permission === 'edit' ? 'edycja' : 'odczyt'}</span>
-                  {share.label && <span>{share.label}</span>}
-                  <span>
-                    <time datetime={isoDate(share.created_at)}>{formatDate(share.created_at)}</time>
-                  </span>
-                  {share.permission === 'edit' && (
-                    <a href={`/w/${share.token}/edytuj/`}>Otwórz edytor</a>
-                  )}
+          {shares.map((share) => {
+            const shareUrl = `${origin}/w/${share.token}/`;
+            return (
+              <li class="share-list-item">
+                <div>
+                  <div class="share-url-row">
+                    <a href={shareUrl}>{shareUrl}</a>
+                    <button
+                      class="button button-secondary share-copy-button"
+                      type="button"
+                      data-share-copy
+                      data-share-copy-url={shareUrl}
+                    >
+                      Kopiuj
+                    </button>
+                  </div>
+                  <div class="my-note-list-meta">
+                    <span class="badge">{share.permission === 'edit' ? 'edycja' : 'odczyt'}</span>
+                    {share.label && <span>{share.label}</span>}
+                    <span>
+                      <time datetime={isoDate(share.created_at)}>{formatDate(share.created_at)}</time>
+                    </span>
+                    {share.permission === 'edit' && (
+                      <a href={`/w/${share.token}/edytuj/`}>Otwórz edytor</a>
+                    )}
+                  </div>
                 </div>
-              </div>
-              <form method="post" action="/api/notes/share-revoke">
-                <CsrfField />
-                <input type="hidden" name="slug" value={note.slug} />
-                <input type="hidden" name="share_id" value={share.id} />
-                <button class="button button-danger" type="submit">
-                  Unieważnij
-                </button>
-              </form>
-            </li>
-          ))}
+                <form method="post" action="/api/notes/share-revoke">
+                  <CsrfField />
+                  <input type="hidden" name="slug" value={note.slug} />
+                  <input type="hidden" name="share_id" value={share.id} />
+                  <button class="button button-danger" type="submit">
+                    Unieważnij
+                  </button>
+                </form>
+              </li>
+            );
+          })}
         </ul>
       )
     }
@@ -345,6 +368,57 @@ const origin = Astro.url.origin;
   <NoteScripts />
 
   <script>
+    async function copyShareUrl(value: string): Promise<boolean> {
+      try {
+        await navigator.clipboard.writeText(value);
+        return true;
+      } catch {
+        const area = document.createElement('textarea');
+        area.value = value;
+        area.setAttribute('readonly', '');
+        area.style.position = 'fixed';
+        area.style.opacity = '0';
+        document.body.append(area);
+        area.select();
+        let ok = false;
+        try {
+          ok = document.execCommand('copy');
+        } catch {
+          ok = false;
+        }
+        area.remove();
+        return ok;
+      }
+    }
+
+    function bindShareCopy() {
+      document.querySelectorAll<HTMLButtonElement>('[data-share-copy]').forEach((button) => {
+        if (button.dataset.ready === '1') return;
+        button.dataset.ready = '1';
+        button.addEventListener('click', async () => {
+          const url = button.dataset.shareCopyUrl ?? '';
+          if (!url) return;
+          const ok = await copyShareUrl(url);
+          const previous = button.textContent;
+          button.textContent = ok ? 'Skopiowano' : 'Nie udało się';
+          window.setTimeout(() => {
+            button.textContent = previous || 'Kopiuj';
+          }, 1800);
+        });
+      });
+    }
+
+    function bindShareToasts() {
+      for (const toast of document.querySelectorAll<HTMLElement>('[data-share-toast]')) {
+        if (toast.dataset.ready === '1') continue;
+        toast.dataset.ready = '1';
+        window.setTimeout(() => {
+          toast.classList.add('is-leaving');
+          window.setTimeout(() => toast.remove(), 220);
+        }, 8000);
+      }
+    }
+
     function bindPublishPanels() {
       document.querySelectorAll('[data-publish-panel]').forEach((panel) => {
         const applySubject = panel.querySelector('[data-apply-subject]');
@@ -381,7 +455,13 @@ const origin = Astro.url.origin;
       });
     }
 
-    bindPublishPanels();
-    document.addEventListener('astro:page-load', bindPublishPanels);
+    const bootShareUi = () => {
+      bindPublishPanels();
+      bindShareCopy();
+      bindShareToasts();
+    };
+
+    bootShareUi();
+    document.addEventListener('astro:page-load', bootShareUi);
   </script>
 </Base>

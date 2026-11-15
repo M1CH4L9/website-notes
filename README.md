@@ -44,7 +44,7 @@ Admin: konto połączone z GitHubem `M1CH4L9` (albo `ADMIN_GITHUB_LOGIN`).
 1. **Neon (Vercel Marketplace)**  
    Vercel → projekt → Storage / Marketplace → Neon → Create.  
    Region najlepiej blisko funkcji (np. Frankfurt / `fra1`).  
-   Zostaw bazę na **Production** (preview bez osobnej bazy nie powinno migrować produkcji — skrypt i tak pomija non-production).
+   Zostaw bazę na **Production** (preview bez osobnej bazy nie powinno migrować produkcji - skrypt i tak pomija non-production).
 2. **Zmienna bazy**  
    Upewnij się, że jest `DATABASE_URL` albo `POSTGRES_URL` (Neon z Marketplace zwykle dokłada to sam).
 3. **GitHub OAuth App**  
@@ -76,7 +76,7 @@ notatki/
     ...
 ```
 
-Szczegóły składni Markdowna (kod, tabele, wzory, callouty) jak wcześniej — te same elementy działają w notatkach użytkowników.
+Szczegóły składni Markdowna (kod, tabele, wzory, callouty) jak wcześniej - te same elementy działają w notatkach użytkowników.
 
 ## Motywy
 
@@ -123,8 +123,8 @@ public/oauth-icon.png     ikona do GitHub OAuth App
 - **Odczyt** (`/w/<token>/`): bez konta.
 - **Edycja** (`/w/<token>/edytuj/`): token `edit` wystarcza; zalogowanie opcjonalne (nick w obecności).
 - Sync: polling + optimistic concurrency (`revision`); obecność „kto edytuje”.
-- Kursory CRDT (Yjs) — follow-up (wymaga WebSocket / Durable Objects na Vercelu).
+- Kursory CRDT (Yjs) - follow-up (wymaga WebSocket / Durable Objects na Vercelu).
 
 ## Poza zakresem (na później)
 
-PDF/zdjęcia, kursory live (Yjs) — schemat share nie blokuje.
+PDF/zdjęcia, kursory live (Yjs) - schemat share nie blokuje.
