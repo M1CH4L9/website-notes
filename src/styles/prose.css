@@ -8,7 +8,7 @@
 
 .note-main {
   min-width: 0;
-  max-width: 52rem;
+  max-width: 58rem;
 }
 
 .note-aside {
@@ -17,9 +17,10 @@
 
 @media (min-width: 60rem) {
   .note-layout {
-    grid-template-columns: minmax(0, var(--prose-width)) 12.5rem;
-    justify-content: start;
-    column-gap: 2.75rem;
+    grid-template-columns: minmax(0, 1fr) 12.5rem;
+    justify-content: stretch;
+    column-gap: 2rem;
+    width: 100%;
   }
 
   .note-main {
@@ -28,7 +29,6 @@
 
   .note-aside {
     display: block;
-    margin-left: auto;
   }
 
   .toc-mobile {
@@ -38,8 +38,8 @@
 
 @media (min-width: 72rem) {
   .note-layout {
-    grid-template-columns: minmax(0, var(--prose-width)) 13.5rem;
-    column-gap: 3.5rem;
+    grid-template-columns: minmax(0, 1fr) 13.5rem;
+    column-gap: 2.25rem;
   }
 }
 
@@ -109,6 +109,28 @@
   max-height: calc(100vh - 3rem);
   overflow-y: auto;
   overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-strong) transparent;
+}
+
+.toc-desktop::-webkit-scrollbar {
+  width: 0.55rem;
+  height: 0.55rem;
+}
+
+.toc-desktop::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.toc-desktop::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+  background-color: var(--border-strong);
+}
+
+.toc-desktop::-webkit-scrollbar-thumb:hover {
+  background-color: color-mix(in srgb, var(--accent) 55%, var(--border-strong));
 }
 
 .toc-heading {

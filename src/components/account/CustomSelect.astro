@@ -1,0 +1,262 @@
+---
+export type CustomSelectOption = {
+  value: string;
+  label: string;
+};
+
+interface Props {
+  id: string;
+  name: string;
+  options: CustomSelectOption[];
+  value?: string;
+  required?: boolean;
+  placeholder?: string;
+}
+
+const {
+  id,
+  name,
+  options,
+  value = '',
+  required = false,
+  placeholder,
+} = Astro.props;
+
+const listId = `${id}-list`;
+const allowEmpty = typeof placeholder === 'string';
+const selected = options.find((option) => option.value === value);
+const label = selected?.label ?? (allowEmpty ? placeholder : options[0]?.label ?? '');
+---
+
+<div
+  class="custom-select"
+  data-custom-select
+  data-placeholder={allowEmpty ? placeholder : undefined}
+>
+  <select
+    class="visually-hidden"
+    id={id}
+    name={name}
+    required={required || undefined}
+    tabindex="-1"
+    data-custom-select-native
+  >
+    {
+      allowEmpty && (
+        <option value="" selected={value === ''}>
+          {placeholder}
+        </option>
+      )
+    }
+    {
+      options.map((option) => (
+        <option value={option.value} selected={option.value === value}>
+          {option.label}
+        </option>
+      ))
+    }
+  </select>
+
+  <button
+    type="button"
+    class="custom-select-trigger"
+    aria-haspopup="listbox"
+    aria-expanded="false"
+    aria-controls={listId}
+    data-custom-select-trigger
+  >
+    <span data-custom-select-label>{label}</span>
+  </button>
+
+  <ul
+    class="custom-select-list"
+    id={listId}
+    role="listbox"
+    hidden
+    data-custom-select-list
+  >
+    {
+      allowEmpty && (
+        <li
+          class="custom-select-option"
+          role="option"
+          tabindex="-1"
+          data-value=""
+          aria-selected={value === '' ? 'true' : 'false'}
+        >
+          {placeholder}
+        </li>
+      )
+    }
+    {
+      options.map((option) => (
+        <li
+          class="custom-select-option"
+          role="option"
+          tabindex="-1"
+          data-value={option.value}
+          aria-selected={option.value === value ? 'true' : 'false'}
+        >
+          {option.label}
+        </li>
+      ))
+    }
+  </ul>
+</div>
+
+<script>
+  function closeSelect(root: HTMLElement, returnFocus = false) {
+    const trigger = root.querySelector<HTMLButtonElement>('[data-custom-select-trigger]');
+    const list = root.querySelector<HTMLElement>('[data-custom-select-list]');
+    if (!trigger || !list || list.hidden) return;
+    list.hidden = true;
+    trigger.setAttribute('aria-expanded', 'false');
+    root.classList.remove('is-open');
+    if (returnFocus) trigger.focus();
+  }
+
+  function openSelect(root: HTMLElement) {
+    document.querySelectorAll<HTMLElement>('[data-custom-select].is-open').forEach((other) => {
+      if (other !== root) closeSelect(other);
+    });
+
+    const trigger = root.querySelector<HTMLButtonElement>('[data-custom-select-trigger]');
+    const list = root.querySelector<HTMLElement>('[data-custom-select-list]');
+    const native = root.querySelector<HTMLSelectElement>('[data-custom-select-native]');
+    if (!trigger || !list || !native) return;
+
+    list.hidden = false;
+    trigger.setAttribute('aria-expanded', 'true');
+    root.classList.add('is-open');
+
+    const selected =
+      list.querySelector<HTMLElement>(`[data-value="${CSS.escape(native.value)}"]`) ??
+      list.querySelector<HTMLElement>('[role="option"]');
+    selected?.focus();
+  }
+
+  function setValue(root: HTMLElement, value: string, announce = true) {
+    const native = root.querySelector<HTMLSelectElement>('[data-custom-select-native]');
+    const label = root.querySelector<HTMLElement>('[data-custom-select-label]');
+    const list = root.querySelector<HTMLElement>('[data-custom-select-list]');
+    const placeholder = root.dataset.placeholder ?? 'Wybierz…';
+    if (!native || !label || !list) return;
+
+    native.value = value;
+    const option = list.querySelector<HTMLElement>(`[data-value="${CSS.escape(value)}"]`);
+    label.textContent = option?.textContent?.trim() || placeholder;
+
+    list.querySelectorAll<HTMLElement>('[role="option"]').forEach((item) => {
+      item.setAttribute('aria-selected', item.dataset.value === value ? 'true' : 'false');
+    });
+
+    if (announce) {
+      native.dispatchEvent(new Event('change', { bubbles: true }));
+      native.dispatchEvent(new Event('input', { bubbles: true }));
+    }
+  }
+
+  function moveActive(root: HTMLElement, delta: number) {
+    const list = root.querySelector<HTMLElement>('[data-custom-select-list]');
+    if (!list || list.hidden) return;
+    const options = [...list.querySelectorAll<HTMLElement>('[role="option"]')];
+    if (options.length === 0) return;
+    const index = options.findIndex((item) => item === document.activeElement);
+    const next = options[(index < 0 ? 0 : index + delta + options.length) % options.length];
+    next?.focus();
+  }
+
+  function bindCustomSelect(root: HTMLElement) {
+    if (root.dataset.ready === '1') return;
+    root.dataset.ready = '1';
+
+    const trigger = root.querySelector<HTMLButtonElement>('[data-custom-select-trigger]');
+    const list = root.querySelector<HTMLElement>('[data-custom-select-list]');
+    const native = root.querySelector<HTMLSelectElement>('[data-custom-select-native]');
+    if (!trigger || !list || !native) return;
+
+    trigger.addEventListener('click', () => {
+      if (list.hidden) openSelect(root);
+      else closeSelect(root);
+    });
+
+    trigger.addEventListener('keydown', (event) => {
+      if (event.key === 'ArrowDown' || event.key === 'ArrowUp' || event.key === 'Enter' || event.key === ' ') {
+        event.preventDefault();
+        openSelect(root);
+      }
+    });
+
+    list.addEventListener('click', (event) => {
+      const option = (event.target as HTMLElement | null)?.closest<HTMLElement>('[role="option"]');
+      if (!option || !list.contains(option)) return;
+      setValue(root, option.dataset.value ?? '');
+      closeSelect(root, true);
+    });
+
+    list.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        closeSelect(root, true);
+        return;
+      }
+      if (event.key === 'ArrowDown') {
+        event.preventDefault();
+        moveActive(root, 1);
+        return;
+      }
+      if (event.key === 'ArrowUp') {
+        event.preventDefault();
+        moveActive(root, -1);
+        return;
+      }
+      if (event.key === 'Home') {
+        event.preventDefault();
+        list.querySelector<HTMLElement>('[role="option"]')?.focus();
+        return;
+      }
+      if (event.key === 'End') {
+        event.preventDefault();
+        const options = list.querySelectorAll<HTMLElement>('[role="option"]');
+        options[options.length - 1]?.focus();
+        return;
+      }
+      if (event.key === 'Enter' || event.key === ' ') {
+        const active = document.activeElement;
+        if (!(active instanceof HTMLElement) || !list.contains(active)) return;
+        event.preventDefault();
+        setValue(root, active.dataset.value ?? '');
+        closeSelect(root, true);
+      }
+    });
+
+    native.addEventListener('invalid', (event) => {
+      event.preventDefault();
+      trigger.focus();
+      openSelect(root);
+    });
+  }
+
+  function bootCustomSelects() {
+    document.querySelectorAll<HTMLElement>('[data-custom-select]').forEach(bindCustomSelect);
+  }
+
+  if (!(window as Window & { __customSelectOutside?: boolean }).__customSelectOutside) {
+    (window as Window & { __customSelectOutside?: boolean }).__customSelectOutside = true;
+    document.addEventListener('pointerdown', (event) => {
+      const target = event.target as Node | null;
+      document.querySelectorAll<HTMLElement>('[data-custom-select].is-open').forEach((root) => {
+        if (!target || !root.contains(target)) closeSelect(root);
+      });
+    });
+    document.addEventListener('keydown', (event) => {
+      if (event.key !== 'Escape') return;
+      document.querySelectorAll<HTMLElement>('[data-custom-select].is-open').forEach((root) => {
+        closeSelect(root, true);
+      });
+    });
+  }
+
+  bootCustomSelects();
+  document.addEventListener('astro:page-load', bootCustomSelects);
+</script>

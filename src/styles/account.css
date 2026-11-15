@@ -57,8 +57,7 @@
 }
 
 .field input,
-.field textarea,
-.field select {
+.field textarea {
   width: 100%;
   box-sizing: border-box;
   min-height: 2.5rem;
@@ -70,26 +69,6 @@
   font: inherit;
 }
 
-.field select {
-  appearance: none;
-  -webkit-appearance: none;
-  -moz-appearance: none;
-  padding-right: 2.35rem;
-  background-color: var(--surface);
-  background-image: linear-gradient(45deg, transparent 50%, var(--text-muted) 50%),
-    linear-gradient(135deg, var(--text-muted) 50%, transparent 50%);
-  background-position:
-    calc(100% - 1.05rem) 50%,
-    calc(100% - 0.7rem) 50%;
-  background-size: 0.35rem 0.35rem, 0.35rem 0.35rem;
-  background-repeat: no-repeat;
-  cursor: pointer;
-}
-
-.field select::-ms-expand {
-  display: none;
-}
-
 .field textarea {
   min-height: 18rem;
   resize: vertical;
@@ -99,10 +78,102 @@
 }
 
 .field input:focus,
-.field textarea:focus,
-.field select:focus {
+.field textarea:focus {
   outline: 2px solid var(--focus-ring);
   outline-offset: 1px;
+}
+
+.custom-select {
+  position: relative;
+  width: 100%;
+  min-width: 0;
+}
+
+.custom-select-trigger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  width: 100%;
+  box-sizing: border-box;
+  min-height: 2.5rem;
+  padding: 0.65rem 2.35rem 0.65rem 0.75rem;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-s);
+  background-color: var(--surface);
+  background-image: linear-gradient(45deg, transparent 50%, var(--text-muted) 50%),
+    linear-gradient(135deg, var(--text-muted) 50%, transparent 50%);
+  background-position:
+    calc(100% - 1.05rem) 50%,
+    calc(100% - 0.7rem) 50%;
+  background-size: 0.35rem 0.35rem, 0.35rem 0.35rem;
+  background-repeat: no-repeat;
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.custom-select-trigger:focus,
+.custom-select.is-open .custom-select-trigger {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 1px;
+}
+
+.custom-select-trigger [data-custom-select-label] {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.custom-select-list {
+  position: absolute;
+  z-index: 40;
+  top: calc(100% + 0.3rem);
+  left: 0;
+  right: 0;
+  margin: 0;
+  padding: 0.3rem;
+  list-style: none;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-m);
+  background: var(--surface);
+  box-shadow: var(--shadow-card-hover);
+  max-height: min(16rem, 50vh);
+  overflow: auto;
+}
+
+.custom-select-option {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0.55rem 0.7rem;
+  border: 0;
+  border-radius: var(--radius-s);
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.custom-select-option:hover,
+.custom-select-option:focus {
+  outline: none;
+  background: var(--accent-soft);
+  color: var(--text);
+}
+
+.custom-select-option[aria-selected='true'] {
+  background: color-mix(in srgb, var(--accent) 18%, var(--surface));
+  color: var(--text);
+}
+
+.custom-select-option[aria-selected='true']:hover,
+.custom-select-option[aria-selected='true']:focus {
+  background: color-mix(in srgb, var(--accent) 26%, var(--surface));
 }
 
 .form-actions {
@@ -651,17 +722,31 @@ button.button-danger:hover {
   min-width: 0;
 }
 
-.share-url-row a {
+.share-url-row a,
+.share-link {
   min-width: 0;
   word-break: break-all;
   color: var(--accent);
 }
 
-.share-copy-button {
+.share-copy-button,
+.share-revoke-button {
   flex: none;
   min-height: 2.15rem;
   padding-inline: 0.7rem;
   font-size: 0.85rem;
+}
+
+.share-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  align-items: center;
+}
+
+.share-revoke-form {
+  margin: 0;
+  display: inline-flex;
 }
 
 .publish-request-panel {
@@ -689,19 +774,10 @@ button.button-danger:hover {
   gap: 0.85rem;
 }
 
-.publish-request-panel .field input {
-  background: var(--surface);
-}
-
-.publish-request-panel .field select {
+.publish-request-panel .field input,
+.publish-request-panel .custom-select-trigger,
+.publish-request-panel .custom-select-list {
   background-color: var(--surface);
-  background-image: linear-gradient(45deg, transparent 50%, var(--text-muted) 50%),
-    linear-gradient(135deg, var(--text-muted) 50%, transparent 50%);
-  background-position:
-    calc(100% - 1.05rem) 50%,
-    calc(100% - 0.7rem) 50%;
-  background-size: 0.35rem 0.35rem, 0.35rem 0.35rem;
-  background-repeat: no-repeat;
 }
 
 .publish-subject-fieldset,
@@ -781,22 +857,28 @@ button.button-danger:hover {
 }
 
 .share-list-item {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.75rem;
-  justify-content: space-between;
-  align-items: flex-start;
+  display: grid;
+  gap: 0.55rem;
   padding: 0.75rem 0.85rem;
   border: 1px solid var(--border);
   border-radius: var(--radius-s);
   background: var(--surface);
 }
 
-.share-list-item > div:first-child {
-  flex: 1 1 14rem;
+.share-list-main {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem 0.65rem;
+  align-items: center;
   min-width: 0;
-  display: grid;
-  gap: 0.4rem;
+}
+
+.share-list-main .share-link {
+  flex: 1 1 100%;
+}
+
+.share-list-main .share-actions {
+  flex: 0 0 auto;
 }
 
 .share-editor-head {

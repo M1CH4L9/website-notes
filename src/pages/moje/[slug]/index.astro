@@ -5,6 +5,7 @@ import '../../../styles/prose.css';
 
 import Base from '../../../layouts/Base.astro';
 import CsrfField from '../../../components/account/CsrfField.astro';
+import CustomSelect from '../../../components/account/CustomSelect.astro';
 import NoteScripts from '../../../components/NoteScripts.astro';
 import Toc from '../../../components/Toc.astro';
 import { formatDate, isoDate } from '../../../lib/format';
@@ -31,6 +32,14 @@ const request = await latestRequestForNote(note.id);
 const publication = await getPublicationForSourceNote(note.id);
 const shares = await listSharesForNote(note.id);
 const subjects = await listSubjectOptions();
+const subjectSelectOptions = subjects.map((s) => ({
+  value: s.slug,
+  label: s.fullName ? `${s.title} - ${s.fullName}` : s.title,
+}));
+const permissionOptions = [
+  { value: 'read', label: 'Tylko odczyt' },
+  { value: 'edit', label: 'Edycja' },
+];
 const error = Astro.url.searchParams.get('error');
 const ok = Astro.url.searchParams.get('ok');
 const newShareToken = Astro.url.searchParams.get('share');
@@ -144,15 +153,13 @@ const newShareUrl = newShareToken ? `${origin}/w/${newShareToken}/` : null;
             </label>
             <div class="field" data-subject-existing>
               <label class="visually-hidden" for="subject_slug">Przedmiot</label>
-              <select id="subject_slug" name="subject_slug" required>
-                <option value="">Wybierz…</option>
-                {subjects.map((s) => (
-                  <option value={s.slug}>
-                    {s.title}
-                    {s.fullName ? ` - ${s.fullName}` : ''}
-                  </option>
-                ))}
-              </select>
+              <CustomSelect
+                id="subject_slug"
+                name="subject_slug"
+                required
+                placeholder="Wybierz…"
+                options={subjectSelectOptions}
+              />
             </div>
 
             <label class="choice-row">
@@ -226,15 +233,13 @@ const newShareUrl = newShareToken ? `${origin}/w/${newShareToken}/` : null;
               </label>
               <div class="field" data-subject-existing>
                 <label class="visually-hidden" for="subject_slug_upd">Przedmiot</label>
-                <select id="subject_slug_upd" name="subject_slug">
-                  <option value="">Wybierz…</option>
-                  {subjects.map((s) => (
-                    <option value={s.slug} selected={s.slug === publication.subject_slug}>
-                      {s.title}
-                      {s.fullName ? ` - ${s.fullName}` : ''}
-                    </option>
-                  ))}
-                </select>
+                <CustomSelect
+                  id="subject_slug_upd"
+                  name="subject_slug"
+                  placeholder="Wybierz…"
+                  value={publication.subject_slug}
+                  options={subjectSelectOptions}
+                />
               </div>
               <label class="choice-row">
                 <input type="radio" name="subject_mode" value="new" data-subject-mode />
@@ -307,10 +312,12 @@ const newShareUrl = newShareToken ? `${origin}/w/${newShareToken}/` : null;
       <input type="hidden" name="slug" value={note.slug} />
       <div class="field">
         <label for="permission">Uprawnienie</label>
-        <select id="permission" name="permission">
-          <option value="read">Tylko odczyt</option>
-          <option value="edit">Edycja</option>
-        </select>
+        <CustomSelect
+          id="permission"
+          name="permission"
+          value="read"
+          options={permissionOptions}
+        />
       </div>
       <div class="field">
         <label for="label">Etykieta (opcjonalnie)</label>
@@ -326,9 +333,11 @@ const newShareUrl = newShareToken ? `${origin}/w/${newShareToken}/` : null;
             const shareUrl = `${origin}/w/${share.token}/`;
             return (
               <li class="share-list-item">
-                <div>
-                  <div class="share-url-row">
-                    <a href={shareUrl}>{shareUrl}</a>
+                <div class="share-list-main">
+                  <a class="share-link" href={shareUrl}>
+                    {shareUrl}
+                  </a>
+                  <div class="share-actions">
                     <button
                       class="button button-secondary share-copy-button"
                       type="button"
@@ -337,26 +346,26 @@ const newShareUrl = newShareToken ? `${origin}/w/${newShareToken}/` : null;
                     >
                       Kopiuj
                     </button>
-                  </div>
-                  <div class="my-note-list-meta">
-                    <span class="badge">{share.permission === 'edit' ? 'edycja' : 'odczyt'}</span>
-                    {share.label && <span>{share.label}</span>}
-                    <span>
-                      <time datetime={isoDate(share.created_at)}>{formatDate(share.created_at)}</time>
-                    </span>
-                    {share.permission === 'edit' && (
-                      <a href={`/w/${share.token}/edytuj/`}>Otwórz edytor</a>
-                    )}
+                    <form class="share-revoke-form" method="post" action="/api/notes/share-revoke">
+                      <CsrfField />
+                      <input type="hidden" name="slug" value={note.slug} />
+                      <input type="hidden" name="share_id" value={share.id} />
+                      <button class="button button-danger share-revoke-button" type="submit">
+                        Unieważnij
+                      </button>
+                    </form>
                   </div>
                 </div>
-                <form method="post" action="/api/notes/share-revoke">
-                  <CsrfField />
-                  <input type="hidden" name="slug" value={note.slug} />
-                  <input type="hidden" name="share_id" value={share.id} />
-                  <button class="button button-danger" type="submit">
-                    Unieważnij
-                  </button>
-                </form>
+                <div class="my-note-list-meta">
+                  <span class="badge">{share.permission === 'edit' ? 'edycja' : 'odczyt'}</span>
+                  {share.label && <span>{share.label}</span>}
+                  <span>
+                    <time datetime={isoDate(share.created_at)}>{formatDate(share.created_at)}</time>
+                  </span>
+                  {share.permission === 'edit' && (
+                    <a href={`/w/${share.token}/edytuj/`}>Otwórz edytor</a>
+                  )}
+                </div>
               </li>
             );
           })}
