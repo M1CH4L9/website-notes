@@ -20,20 +20,14 @@ if (!note) {
 
 const error = Astro.url.searchParams.get('error');
 const ok = Astro.url.searchParams.get('ok');
-const toast =
-  ok === 'Skopiowano z notatek publicznych.' ? ok : null;
+const toast = ok === 'Skopiowano z notatek publicznych.' ? ok : null;
 const inlineOk = ok && !toast ? ok : null;
 const { html } = await renderUserMarkdown(note.body);
 ---
 
-<Base title={`Edycja · ${note.title}`} description="Edytuj notatkę Markdown." wide>
-  <header class="page-head">
-    <h1 class="page-title">Edycja</h1>
-    <p class="page-lead">{note.title}</p>
-  </header>
-
-  {error && <p class="form-error">{error}</p>}
-  {inlineOk && <p class="form-ok">{inlineOk}</p>}
+<Base title={`Edycja · ${note.title}`} description="Edytuj notatkę Markdown." wide editor>
+  {error && <p class="form-error editor-banner">{error}</p>}
+  {inlineOk && <p class="form-ok editor-banner">{inlineOk}</p>}
 
   <NoteEditor
     action="/api/notes/update"

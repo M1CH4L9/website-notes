@@ -36,43 +36,76 @@ const {
   )
 }
 
-<form class="note-editor" method="post" action={action} data-note-editor>
+<form class="note-editor" method="post" action={action} data-note-editor data-mobile-pane="source">
   <CsrfField />
   {slug && !showSlug && <input type="hidden" name="slug" value={slug} />}
 
-  <div class="note-editor-meta">
-    <div class="field">
-      <label for="title">Tytuł</label>
-      <input id="title" name="title" required maxlength="200" value={title} />
+  <div class="note-editor-bar">
+    <div class="note-editor-meta">
+      <div class="field field-compact">
+        <label for="title">Tytuł</label>
+        <input id="title" name="title" required maxlength="200" value={title} />
+      </div>
+      <div class="field field-compact">
+        <label for="description">Opis</label>
+        <input id="description" name="description" maxlength="500" value={description} placeholder="Opcjonalnie" />
+      </div>
+      {
+        showSlug && (
+          <div class="field field-compact field-slug">
+            <label for="slug">Adres</label>
+            <input
+              id="slug"
+              name="slug"
+              pattern="[a-z0-9]+(?:-[a-z0-9]+)*"
+              maxlength="80"
+              value={slug}
+              placeholder="z-tytulu"
+            />
+          </div>
+        )
+      }
     </div>
-    <div class="field">
-      <label for="description">Krótki opis</label>
-      <input id="description" name="description" maxlength="500" value={description} />
+
+    <div class="form-actions note-editor-actions">
+      <button class="button" type="submit">{submitLabel}</button>
+      <a class="button button-secondary" href={cancelHref}>Anuluj</a>
     </div>
-    {
-      showSlug && (
-        <div class="field">
-          <label for="slug">Adres (opcjonalnie)</label>
-          <input
-            id="slug"
-            name="slug"
-            pattern="[a-z0-9]+(?:-[a-z0-9]+)*"
-            maxlength="80"
-            value={slug}
-          />
-          <p class="hint">Domyślnie z tytułu. Małe litery, cyfry, myślniki.</p>
-        </div>
-      )
-    }
   </div>
 
-  <div class="form-actions note-editor-actions">
-    <button class="button" type="submit">{submitLabel}</button>
-    <a class="button button-secondary" href={cancelHref}>Anuluj</a>
+  <div class="note-editor-tabs" role="tablist" aria-label="Widok edytora">
+    <button
+      type="button"
+      class="note-editor-tab is-active"
+      role="tab"
+      id="editor-tab-source"
+      aria-selected="true"
+      aria-controls="editor-panel-source"
+      data-editor-tab="source"
+    >
+      Edycja
+    </button>
+    <button
+      type="button"
+      class="note-editor-tab"
+      role="tab"
+      id="editor-tab-preview"
+      aria-selected="false"
+      aria-controls="editor-panel-preview"
+      data-editor-tab="preview"
+    >
+      Podgląd
+    </button>
   </div>
 
   <div class="note-editor-workspace" data-editor-workspace>
-    <div class="note-editor-pane note-editor-source" data-editor-source>
+    <div
+      class="note-editor-pane note-editor-source"
+      data-editor-source
+      id="editor-panel-source"
+      role="tabpanel"
+      aria-labelledby="editor-tab-source"
+    >
       <label class="note-editor-pane-label" for="body">Markdown</label>
       <textarea id="body" name="body" spellcheck="true" data-editor-body>{body}</textarea>
     </div>
@@ -86,10 +119,21 @@ const {
       tabindex="0"
     ></div>
 
-    <aside class="note-editor-pane note-editor-preview" data-editor-preview aria-label="Podgląd na żywo">
+    <aside
+      class="note-editor-pane note-editor-preview"
+      data-editor-preview
+      id="editor-panel-preview"
+      role="tabpanel"
+      aria-labelledby="editor-tab-preview"
+      aria-label="Podgląd na żywo"
+    >
       <p class="note-editor-pane-label">Podgląd</p>
       <div class="note-editor-preview-scroll">
-        <div class="prose" data-editor-preview-html set:html={initialPreviewHtml || '<p class="page-lead">Zacznij pisać, a tu pojawi się podgląd.</p>'} />
+        <div
+          class="prose"
+          data-editor-preview-html
+          set:html={initialPreviewHtml || '<p class="page-lead">Zacznij pisać, a tu pojawi się podgląd.</p>'}
+        />
       </div>
     </aside>
   </div>
@@ -185,9 +229,29 @@ const {
     splitter.addEventListener('keydown', (event) => {
       if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return;
       event.preventDefault();
-      const current = Number.parseFloat(getComputedStyle(workspace).getPropertyValue('--editor-split')) / 100 || 0.5;
+      const current =
+        Number.parseFloat(getComputedStyle(workspace).getPropertyValue('--editor-split')) / 100 || 0.5;
       applySplit(current + (event.key === 'ArrowLeft' ? -0.04 : 0.04));
     });
+
+    const setMobilePane = (pane: 'source' | 'preview') => {
+      root.dataset.mobilePane = pane;
+      for (const tab of root.querySelectorAll<HTMLButtonElement>('[data-editor-tab]')) {
+        const active = tab.dataset.editorTab === pane;
+        tab.classList.toggle('is-active', active);
+        tab.setAttribute('aria-selected', active ? 'true' : 'false');
+        tab.tabIndex = active ? 0 : -1;
+      }
+    };
+
+    for (const tab of root.querySelectorAll<HTMLButtonElement>('[data-editor-tab]')) {
+      tab.addEventListener('click', () => {
+        const pane = tab.dataset.editorTab === 'preview' ? 'preview' : 'source';
+        setMobilePane(pane);
+      });
+    }
+
+    setMobilePane((root.dataset.mobilePane as 'source' | 'preview') || 'source');
 
     if (body.value.trim()) schedule();
   }
