@@ -35,6 +35,7 @@ npm run check
 | `/przedmioty/<przedmiot>/<slug>/` | publiczne notatki z plików **oraz** zaakceptowane publikacje użytkowników |
 | `/admin/prosby/` | panel: nowe prośby, aktualizacje, przedmioty, publikacje (admin) |
 | `/u/<nazwa>/<slug>/` | przekierowanie do publikacji na homepage (kompatybilność) |
+| `/w/<token>/`, `/w/<token>/edytuj/` | link współdzielony do prywatnej notatki (odczyt / edycja) |
 
 Admin: konto połączone z GitHubem `M1CH4L9` (albo `ADMIN_GITHUB_LOGIN`).
 
@@ -116,6 +117,14 @@ public/oauth-icon.png     ikona do GitHub OAuth App
 4. Usunięcie prywatnej notatki **nie usuwa** publikacji (`source_note_id` → NULL). Admin może zdjąć publikację w zakładce Publikacje.
 5. Linki współdzielone do prywatnych notatek to osobny mechanizm (nie mylić z publikacją).
 
+## Linki współdzielone
+
+- Generowanie i unieważnianie na stronie prywatnej notatki (`Udostępnij`).
+- **Odczyt** (`/w/<token>/`): bez konta.
+- **Edycja** (`/w/<token>/edytuj/`): token `edit` wystarcza; zalogowanie opcjonalne (nick w obecności).
+- Sync: polling + optimistic concurrency (`revision`); obecność „kto edytuje”.
+- Kursory CRDT (Yjs) — follow-up (wymaga WebSocket / Durable Objects na Vercelu).
+
 ## Poza zakresem (na później)
 
-PDF/zdjęcia — schemat i trasy ich nie blokują.
+PDF/zdjęcia, kursory live (Yjs) — schemat share nie blokuje.

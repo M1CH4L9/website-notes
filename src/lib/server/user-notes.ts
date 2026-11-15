@@ -10,6 +10,7 @@ export type UserNote = {
   body: string;
   is_public: boolean;
   source_public_path: string | null;
+  revision?: number;
   created_at: Date;
   updated_at: Date;
 };
@@ -110,6 +111,7 @@ export async function updateNote(
      SET title = $3,
          description = $4,
          body = $5,
+         revision = revision + 1,
          updated_at = now()
      WHERE user_id = $1 AND slug = $2
      RETURNING *`,
