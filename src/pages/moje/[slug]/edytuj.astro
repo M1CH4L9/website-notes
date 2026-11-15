@@ -4,7 +4,7 @@ import '@fontsource-variable/jetbrains-mono/wght.css';
 import '../../../styles/prose.css';
 
 import Base from '../../../layouts/Base.astro';
-import CsrfField from '../../../components/account/CsrfField.astro';
+import NoteEditor from '../../../components/account/NoteEditor.astro';
 import { getNoteByUserAndSlug } from '../../../lib/server/user-notes';
 import { renderUserMarkdown } from '../../../markdown/user.mjs';
 
@@ -20,6 +20,9 @@ if (!note) {
 
 const error = Astro.url.searchParams.get('error');
 const ok = Astro.url.searchParams.get('ok');
+const toast =
+  ok === 'Skopiowano z notatek publicznych.' ? ok : null;
+const inlineOk = ok && !toast ? ok : null;
 const { html } = await renderUserMarkdown(note.body);
 ---
 
@@ -30,33 +33,17 @@ const { html } = await renderUserMarkdown(note.body);
   </header>
 
   {error && <p class="form-error">{error}</p>}
-  {ok && <p class="form-ok">{ok}</p>}
+  {inlineOk && <p class="form-ok">{inlineOk}</p>}
 
-  <div class="editor-layout is-split">
-    <form class="note-form" method="post" action="/api/notes/update">
-      <CsrfField />
-      <input type="hidden" name="slug" value={note.slug} />
-      <div class="field">
-        <label for="title">Tytuł</label>
-        <input id="title" name="title" required maxlength="200" value={note.title} />
-      </div>
-      <div class="field">
-        <label for="description">Krótki opis</label>
-        <input id="description" name="description" maxlength="500" value={note.description ?? ''} />
-      </div>
-      <div class="field">
-        <label for="body">Treść Markdown</label>
-        <textarea id="body" name="body" spellcheck="true">{note.body}</textarea>
-      </div>
-      <div class="form-actions">
-        <button class="button" type="submit">Zapisz</button>
-        <a class="button button-secondary" href={`/moje/${note.slug}/`}>Podgląd</a>
-      </div>
-    </form>
-
-    <aside class="editor-preview" aria-label="Podgląd">
-      <p class="editor-preview-label">Podgląd zapisanej treści</p>
-      <div class="prose" set:html={html} />
-    </aside>
-  </div>
+  <NoteEditor
+    action="/api/notes/update"
+    submitLabel="Zapisz"
+    cancelHref={`/moje/${note.slug}/`}
+    title={note.title}
+    description={note.description ?? ''}
+    slug={note.slug}
+    body={note.body}
+    initialPreviewHtml={html}
+    toast={toast}
+  />
 </Base>

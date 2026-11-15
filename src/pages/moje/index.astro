@@ -20,11 +20,13 @@ const pendingByNote = new Map(
 );
 ---
 
-<Base title="Moje notatki" description="Twoja prywatna sekcja notatek.">
+<Base title="Profil" description="Twoja prywatna sekcja notatek.">
   <header class="page-head">
-    <h1 class="page-title">Moje notatki</h1>
-    <p class="page-lead">
-      Zalogowano jako <strong>{user.username}</strong>
+    <h1 class="page-title">Profil</h1>
+    <p class="page-lead page-meta">
+      <span>
+        Zalogowano jako <strong>{user.username}</strong>
+      </span>
       {user.is_admin && <span class="badge">admin</span>}
     </p>
   </header>

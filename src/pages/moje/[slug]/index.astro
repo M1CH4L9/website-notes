@@ -57,7 +57,9 @@ const ok = Astro.url.searchParams.get('ok');
         <h1 class="page-title">{note.title}</h1>
         {note.description && <p class="page-lead">{note.description}</p>}
         <p class="page-meta">
-          Aktualizacja: <time datetime={isoDate(note.updated_at)}>{formatDate(note.updated_at)}</time>
+          <span>
+            Aktualizacja: <time datetime={isoDate(note.updated_at)}>{formatDate(note.updated_at)}</time>
+          </span>
           {
             note.is_public ? (
               <span class="badge badge-public">publiczna</span>
@@ -80,9 +82,11 @@ const ok = Astro.url.searchParams.get('ok');
 
   {
     !note.is_public && request?.status !== 'pending' && (
-      <section class="auth-panel" style="width:min(100%,36rem);margin-top:2rem;">
-        <h2 class="page-title" style="font-size:1.25rem;">Prośba o upublicznienie</h2>
-        <p class="page-lead">Admin (GitHub M1CH4L9) zobaczy prośbę i może zaakceptować albo odrzucić.</p>
+      <section class="publish-request-panel">
+        <h2 class="publish-request-title">Prośba o upublicznienie</h2>
+        <p class="publish-request-lead">
+          Admin (GitHub M1CH4L9) zobaczy prośbę i może zaakceptować albo odrzucić.
+        </p>
         <form class="auth-form" method="post" action="/api/notes/publish-request">
           <CsrfField />
           <input type="hidden" name="slug" value={note.slug} />

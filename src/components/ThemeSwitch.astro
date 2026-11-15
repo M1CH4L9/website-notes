@@ -50,9 +50,6 @@
   };
 
   const root = document.documentElement;
-  const modeButton = document.querySelector<HTMLButtonElement>('[data-theme-toggle]');
-  const cuteButton = document.querySelector<HTMLButtonElement>('[data-cute-toggle]');
-
   const currentTheme = (): Theme => (root.dataset.theme === 'light' ? 'light' : 'dark');
   const isCute = () => root.dataset.cute === 'true';
 
@@ -69,9 +66,13 @@
     const theme = currentTheme();
     const cute = isCute();
     const label = theme === 'dark' ? 'Przełącz na motyw jasny' : 'Przełącz na motyw ciemny';
-    modeButton?.setAttribute('aria-label', label);
-    modeButton?.setAttribute('title', label);
-    cuteButton?.setAttribute('aria-checked', String(cute));
+    for (const modeButton of document.querySelectorAll<HTMLButtonElement>('[data-theme-toggle]')) {
+      modeButton.setAttribute('aria-label', label);
+      modeButton.setAttribute('title', label);
+    }
+    for (const cuteButton of document.querySelectorAll<HTMLButtonElement>('[data-cute-toggle]')) {
+      cuteButton.setAttribute('aria-checked', String(cute));
+    }
     document
       .querySelector('meta[name="theme-color"]')
       ?.setAttribute('content', THEME_COLORS[(cute ? 'cute-' : '') + theme]);
@@ -93,33 +94,43 @@
     transition.finished.finally(() => root.classList.remove('is-theme-switching'));
   }
 
-  modeButton?.addEventListener('click', () => {
-    const next: Theme = currentTheme() === 'dark' ? 'light' : 'dark';
-    change(() => {
-      root.dataset.theme = next;
-    });
-    save('theme', next);
-  });
+  const g = window as Window & { __themeSwitchBooted?: boolean };
+  if (!g.__themeSwitchBooted) {
+    g.__themeSwitchBooted = true;
 
-  cuteButton?.addEventListener('click', () => {
-    const next = !isCute();
-    change(() => {
-      root.dataset.cute = String(next);
+    document.addEventListener('click', (event) => {
+      const target = event.target as HTMLElement | null;
+      if (target?.closest('[data-theme-toggle]')) {
+        const next: Theme = currentTheme() === 'dark' ? 'light' : 'dark';
+        change(() => {
+          root.dataset.theme = next;
+        });
+        save('theme', next);
+        return;
+      }
+      if (target?.closest('[data-cute-toggle]')) {
+        const next = !isCute();
+        change(() => {
+          root.dataset.cute = String(next);
+        });
+        save('cute', next ? '1' : '0');
+      }
     });
-    save('cute', next ? '1' : '0');
-  });
 
-  // Zmiana w innej karcie.
-  window.addEventListener('storage', (event) => {
-    if (event.key === 'theme' && (event.newValue === 'dark' || event.newValue === 'light')) {
-      root.dataset.theme = event.newValue;
-      sync();
-    }
-    if (event.key === 'cute' && event.newValue !== null) {
-      root.dataset.cute = String(event.newValue === '1');
-      sync();
-    }
-  });
+    // Zmiana w innej karcie.
+    window.addEventListener('storage', (event) => {
+      if (event.key === 'theme' && (event.newValue === 'dark' || event.newValue === 'light')) {
+        root.dataset.theme = event.newValue;
+        sync();
+      }
+      if (event.key === 'cute' && event.newValue !== null) {
+        root.dataset.cute = String(event.newValue === '1');
+        sync();
+      }
+    });
+
+    document.addEventListener('astro:page-load', sync);
+  }
 
   sync();
 </script>
