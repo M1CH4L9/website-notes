@@ -32,8 +32,9 @@ npm run check
 | `/profil/` | konto: dane, hasło, GitHub, motywy |
 | `/moje/nowa/`, `/moje/<slug>/`, `/moje/<slug>/edytuj/` | CRUD + live preview |
 | `/moje/z-publicznej?subject=&note=` | kopia publicznej notatki |
-| `/u/<nazwa>/<slug>/` | upubliczniona notatka użytkownika |
-| `/admin/prosby/` | akceptacja/odrzucenie próśb (tylko admin) |
+| `/przedmioty/<przedmiot>/<slug>/` | publiczne notatki z plików **oraz** zaakceptowane publikacje użytkowników |
+| `/admin/prosby/` | panel: nowe prośby, aktualizacje, przedmioty, publikacje (admin) |
+| `/u/<nazwa>/<slug>/` | przekierowanie do publikacji na homepage (kompatybilność) |
 
 Admin: konto połączone z GitHubem `M1CH4L9` (albo `ADMIN_GITHUB_LOGIN`).
 
@@ -107,6 +108,14 @@ public/favicon.svg        favicon
 public/oauth-icon.png     ikona do GitHub OAuth App
 ```
 
+## Publikowanie na homepage
+
+1. Autor prywatnej notatki wysyła **Prośbę o upublicznienie** (istniejący przedmiot albo zgłoszenie nowego).
+2. Admin w `/admin/prosby/` akceptuje: powstaje **snapshot** w tabeli `publications` i wpis w przedmiocie na stronie głównej.
+3. Późniejsze edycje u autora są lokalne. **Zaktualizuj publikację** wysyła prośbę typu update (pola do wyboru).
+4. Usunięcie prywatnej notatki **nie usuwa** publikacji (`source_note_id` → NULL). Admin może zdjąć publikację w zakładce Publikacje.
+5. Linki współdzielone do prywatnych notatek to osobny mechanizm (nie mylić z publikacją).
+
 ## Poza zakresem (na później)
 
-Wspólna edycja przez link, PDF/zdjęcia — schemat i trasy ich nie blokują.
+PDF/zdjęcia — schemat i trasy ich nie blokują.

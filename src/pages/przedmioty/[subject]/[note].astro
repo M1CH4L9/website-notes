@@ -11,6 +11,7 @@ import Toc from '../../../components/Toc.astro';
 import Base from '../../../layouts/Base.astro';
 import { formatDate, isoDate } from '../../../lib/format';
 import { getSubjects } from '../../../lib/notes';
+import { renderUserMarkdown } from '../../../markdown/user.mjs';
 
 const subjects = await getSubjects();
 const subject = subjects.find((item) => item.slug === Astro.params.subject);
@@ -25,7 +26,20 @@ if (!note) {
 }
 const previous = subject.notes[index - 1];
 const next = subject.notes[index + 1];
-const { Content, headings } = await render(note.entry);
+
+let Content: Awaited<ReturnType<typeof render>>['Content'] | null = null;
+let headings: { depth: number; slug: string; text: string }[] = [];
+let html: string | null = null;
+
+if (note.entry) {
+  const rendered = await render(note.entry);
+  Content = rendered.Content;
+  headings = rendered.headings;
+} else if (note.publication) {
+  const rendered = await renderUserMarkdown(note.publication.body);
+  html = rendered.html;
+  headings = rendered.headings;
+}
 ---
 
 <Base title={`${note.title} · ${subject.title}`} description={note.description}>
@@ -45,21 +59,44 @@ const { Content, headings } = await render(note.entry);
           note.updated && (
             <p class="page-meta">
               Aktualizacja: <time datetime={isoDate(note.updated)}>{formatDate(note.updated)}</time>
+              {note.authorUsername && <span>· @{note.authorUsername}</span>}
             </p>
           )
         }
-        <p class="page-meta note-copy-action">
-          <a class="button" href={`/moje/z-publicznej?subject=${subject.slug}&note=${note.slug}`}>
-            Skopiuj do moich notatek
-          </a>
-        </p>
+        {
+          note.entry && (
+            <p class="page-meta note-copy-action">
+              <a class="button" href={`/moje/z-publicznej?subject=${subject.slug}&note=${note.slug}`}>
+                Skopiuj do moich notatek
+              </a>
+            </p>
+          )
+        }
+        {
+          note.publication && (
+            <p class="page-meta note-copy-action">
+              <a
+                class="button"
+                href={`/moje/z-publicznej?subject=${subject.slug}&note=${note.slug}&pub=${note.publication.id}`}
+              >
+                Skopiuj do moich notatek
+              </a>
+            </p>
+          )
+        }
       </header>
 
       <Toc headings={headings} variant="mobile" />
 
-      <div class="prose">
-        <Content />
-      </div>
+      {
+        Content ? (
+          <div class="prose">
+            <Content />
+          </div>
+        ) : (
+          <div class="prose" set:html={html || ''} />
+        )
+      }
 
       {
         (previous || next) && (

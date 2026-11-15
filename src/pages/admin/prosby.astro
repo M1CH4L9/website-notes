@@ -4,8 +4,12 @@ import '@fontsource-variable/jetbrains-mono/wght.css';
 import '../../styles/prose.css';
 
 import Base from '../../layouts/Base.astro';
+import AccountNav from '../../components/AccountNav.astro';
 import CsrfField from '../../components/account/CsrfField.astro';
 import { listPendingRequests } from '../../lib/server/publications';
+import { listAllPublicationsAdmin } from '../../lib/server/publication-notes';
+import { listCatalogSubjects } from '../../lib/server/catalog';
+import { listSubjectOptions } from '../../lib/server/subject-options';
 import { formatDate, isoDate } from '../../lib/format';
 import { renderUserMarkdown } from '../../markdown/user.mjs';
 
@@ -16,90 +20,239 @@ if (!Astro.locals.user.is_admin) {
   return Astro.redirect('/moje/?error=' + encodeURIComponent('Brak uprawnień admina.'));
 }
 
-const requests = await listPendingRequests();
+const tabParam = Astro.url.searchParams.get('tab') || 'nowe';
+const tab =
+  tabParam === 'aktualizacje' || tabParam === 'przedmioty' || tabParam === 'publikacje'
+    ? tabParam
+    : 'nowe';
+
+const [publishReqs, updateReqs, publications, catalog, subjectOptions] = await Promise.all([
+  tab === 'nowe' ? listPendingRequests('publish') : Promise.resolve([]),
+  tab === 'aktualizacje' ? listPendingRequests('update') : Promise.resolve([]),
+  tab === 'publikacje' ? listAllPublicationsAdmin() : Promise.resolve([]),
+  tab === 'przedmioty' ? listCatalogSubjects() : Promise.resolve([]),
+  tab === 'przedmioty' ? listSubjectOptions() : Promise.resolve([]),
+]);
+
+const requests = tab === 'aktualizacje' ? updateReqs : publishReqs;
 const previews = await Promise.all(
   requests.map(async (req) => ({
     id: req.id,
-    html: (await renderUserMarkdown(req.note_body.slice(0, 20_000))).html,
+    html: (await renderUserMarkdown((req.snap_body || req.note_body).slice(0, 20_000))).html,
   })),
 );
 const previewById = new Map(previews.map((p) => [p.id, p.html]));
 const error = Astro.url.searchParams.get('error');
 const ok = Astro.url.searchParams.get('ok');
+
+const fileOnlySubjects = subjectOptions.filter(
+  (s) => !catalog.some((c) => c.slug === s.slug),
+);
 ---
 
-<Base title="Prośby o publikację" description="Akceptacja i odrzucanie próśb o upublicznienie.">
+<Base title="Panel publikacji" description="Prośby, przedmioty i publikacje na homepage.">
   <header class="page-head">
-    <h1 class="page-title">Prośby o publikację</h1>
-    <p class="page-lead">Po akceptacji notatka jest dostępna pod `/u/nazwa/adres/`.</p>
+    <h1 class="page-title">Panel publikacji</h1>
+    <p class="page-lead">Homepage pokazuje tylko zaakceptowane snapshoty w przedmiotach.</p>
   </header>
 
   <div class="account-toolbar">
-    <nav class="account-nav" aria-label="Konto">
-      <a class="button button-secondary" href="/moje/">Notatki</a>
-      <a class="button button-secondary" href="/profil/">Konto</a>
-      <a class="button" href="/admin/prosby/">Prośby</a>
-    </nav>
+    <AccountNav current="requests" />
   </div>
+
+  <nav class="admin-tabs" aria-label="Zakładki admina">
+    <a class:list={['admin-tab', tab === 'nowe' && 'is-active']} href="/admin/prosby/?tab=nowe">
+      Nowe prośby
+    </a>
+    <a
+      class:list={['admin-tab', tab === 'aktualizacje' && 'is-active']}
+      href="/admin/prosby/?tab=aktualizacje"
+    >
+      Aktualizacje
+    </a>
+    <a
+      class:list={['admin-tab', tab === 'przedmioty' && 'is-active']}
+      href="/admin/prosby/?tab=przedmioty"
+    >
+      Przedmioty
+    </a>
+    <a
+      class:list={['admin-tab', tab === 'publikacje' && 'is-active']}
+      href="/admin/prosby/?tab=publikacje"
+    >
+      Publikacje
+    </a>
+  </nav>
 
   {error && <p class="form-error">{error}</p>}
   {ok && <p class="form-ok">{ok}</p>}
 
   {
-    requests.length === 0 ? (
-      <div class="empty">
-        <p class="empty-title">Brak oczekujących próśb</p>
+    (tab === 'nowe' || tab === 'aktualizacje') &&
+      (requests.length === 0 ? (
+        <div class="empty">
+          <p class="empty-title">
+            {tab === 'nowe' ? 'Brak nowych próśb' : 'Brak oczekujących aktualizacji'}
+          </p>
+        </div>
+      ) : (
+        <ul class="request-list">
+          {requests.map((req) => (
+            <li class="request-card">
+              <div>
+                <strong>{req.snap_title || req.note_title}</strong>
+                <div class="my-note-list-meta">
+                  <span>@{req.username}</span>
+                  <span>
+                    <time datetime={isoDate(req.created_at)}>{formatDate(req.created_at)}</time>
+                  </span>
+                  <span>{req.kind === 'update' ? 'aktualizacja' : 'nowa publikacja'}</span>
+                  {req.subject_slug && <span>przedmiot: {req.subject_slug}</span>}
+                  {req.proposed_subject_title && (
+                    <span>nowy przedmiot: {req.proposed_subject_title}</span>
+                  )}
+                </div>
+                {req.message && <p class="page-lead">{req.message}</p>}
+                {(req.snap_description || req.note_description) && (
+                  <p class="hint">{req.snap_description || req.note_description}</p>
+                )}
+                {req.kind === 'update' && (
+                  <p class="hint">
+                    Pola:{' '}
+                    {[
+                      req.apply_title && 'tytuł',
+                      req.apply_description && 'opis',
+                      req.apply_body && 'treść',
+                      req.apply_subject && 'przedmiot',
+                    ]
+                      .filter(Boolean)
+                      .join(', ')}
+                  </p>
+                )}
+              </div>
+
+              <details>
+                <summary>Podgląd treści (snapshot)</summary>
+                <div class="editor-preview" style="margin-top:0.75rem;">
+                  <div class="prose" set:html={previewById.get(req.id) || ''} />
+                </div>
+              </details>
+
+              <form class="request-actions" method="post" action="/api/admin/resolve-request">
+                <CsrfField />
+                <input type="hidden" name="request_id" value={req.id} />
+                <input type="hidden" name="tab" value={tab} />
+                <div class="field" style="flex:1 1 12rem;">
+                  <label class="visually-hidden" for={`note-${req.id}`}>
+                    Notatka admina
+                  </label>
+                  <input
+                    id={`note-${req.id}`}
+                    name="admin_note"
+                    placeholder="Notatka (opcjonalnie)"
+                    maxlength="500"
+                  />
+                </div>
+                <button class="button" type="submit" name="decision" value="accept">
+                  Akceptuj
+                </button>
+                <button class="button button-danger" type="submit" name="decision" value="reject">
+                  Odrzuć
+                </button>
+              </form>
+            </li>
+          ))}
+        </ul>
+      ))
+  }
+
+  {
+    tab === 'przedmioty' && (
+      <div class="admin-stack">
+        <section class="publish-request-panel">
+          <h2 class="publish-request-title">Z plików (notatki/)</h2>
+          {fileOnlySubjects.length === 0 ? (
+            <p class="hint">Brak albo wszystkie są też w bazie.</p>
+          ) : (
+            <ul class="my-note-list">
+              {fileOnlySubjects.map((s) => (
+                <li class="my-note-list-item">
+                  <span class="my-note-list-title">{s.title}</span>
+                  <div class="my-note-list-meta">
+                    <span>{s.slug}</span>
+                    {s.fullName && <span>{s.fullName}</span>}
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+
+        <section class="publish-request-panel">
+          <h2 class="publish-request-title">Z bazy (zaakceptowane zgłoszenia)</h2>
+          {catalog.length === 0 ? (
+            <p class="hint">Jeszcze nie ma przedmiotów z próśb użytkowników.</p>
+          ) : (
+            <ul class="my-note-list">
+              {catalog.map((s) => (
+                <li class="my-note-list-item">
+                  <a class="my-note-list-title" href={`/przedmioty/${s.slug}/`}>
+                    {s.title}
+                  </a>
+                  <div class="my-note-list-meta">
+                    <span>{s.slug}</span>
+                    {s.full_name && <span>{s.full_name}</span>}
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
       </div>
-    ) : (
-      <ul class="request-list">
-        {requests.map((req) => (
-          <li class="request-card">
-            <div>
-              <strong>{req.note_title}</strong>
-              <div class="my-note-list-meta">
-                <span>@{req.username}</span>
-                <span>
-                  <time datetime={isoDate(req.created_at)}>{formatDate(req.created_at)}</time>
-                </span>
-                <span>
-                  docelowo: /u/{req.username}/{req.note_slug}/
-                </span>
-              </div>
-              {req.message && <p class="page-lead">{req.message}</p>}
-              {req.note_description && <p class="hint">{req.note_description}</p>}
-            </div>
-
-            <details>
-              <summary>Podgląd treści</summary>
-              <div class="editor-preview" style="margin-top:0.75rem;">
-                <div class="prose" set:html={previewById.get(req.id) || ''} />
-              </div>
-            </details>
-
-            <form class="request-actions" method="post" action="/api/admin/resolve-request">
-              <CsrfField />
-              <input type="hidden" name="request_id" value={req.id} />
-              <div class="field" style="flex:1 1 12rem;">
-                <label class="visually-hidden" for={`note-${req.id}`}>
-                  Notatka admina
-                </label>
-                <input
-                  id={`note-${req.id}`}
-                  name="admin_note"
-                  placeholder="Notatka (opcjonalnie)"
-                  maxlength="500"
-                />
-              </div>
-              <button class="button" type="submit" name="decision" value="accept">
-                Akceptuj
-              </button>
-              <button class="button button-danger" type="submit" name="decision" value="reject">
-                Odrzuć
-              </button>
-            </form>
-          </li>
-        ))}
-      </ul>
     )
+  }
+
+  {
+    tab === 'publikacje' &&
+      (publications.length === 0 ? (
+        <div class="empty">
+          <p class="empty-title">Brak publikacji</p>
+        </div>
+      ) : (
+        <ul class="request-list">
+          {publications.map((pub) => (
+            <li class="request-card">
+              <div>
+                <strong>{pub.title}</strong>
+                <div class="my-note-list-meta">
+                  <span>@{pub.author_username}</span>
+                  <span>
+                    <a href={`/przedmioty/${pub.subject_slug}/${pub.slug}/`}>
+                      /przedmioty/{pub.subject_slug}/{pub.slug}/
+                    </a>
+                  </span>
+                  <span class:list={['badge', pub.is_active ? 'badge-public' : null]}>
+                    {pub.is_active ? 'aktywna' : 'zdjęta'}
+                  </span>
+                  {!pub.source_note_id && <span class="badge">bez notatki źródłowej</span>}
+                </div>
+              </div>
+              <form class="request-actions" method="post" action="/api/admin/toggle-publication">
+                <CsrfField />
+                <input type="hidden" name="publication_id" value={pub.id} />
+                <input type="hidden" name="tab" value="publikacje" />
+                <button
+                  class="button button-secondary"
+                  type="submit"
+                  name="active"
+                  value={pub.is_active ? '0' : '1'}
+                >
+                  {pub.is_active ? 'Zdejmij ze strony' : 'Przywróć'}
+                </button>
+              </form>
+            </li>
+          ))}
+        </ul>
+      ))
   }
 </Base>
