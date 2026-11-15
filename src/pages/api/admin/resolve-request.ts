@@ -18,9 +18,12 @@ export const POST: APIRoute = async (context) => {
   if (formOrErr instanceof Response) return formOrErr;
   const form = formOrErr;
 
+  const tab = readFormString(form, 'tab') || 'nowe';
+  const back = `/admin/prosby/?tab=${encodeURIComponent(tab)}`;
+
   const unsafe = assertSafeMutation(context, auth, form);
   if (unsafe) {
-    return redirect('/admin/prosby/?error=' + encodeURIComponent(unsafe));
+    return redirect(`${back}&error=` + encodeURIComponent(unsafe));
   }
 
   const requestId = readFormString(form, 'request_id');
@@ -28,18 +31,21 @@ export const POST: APIRoute = async (context) => {
   const accept = decision === 'accept';
 
   try {
-    await resolveRequest({
+    const result = await resolveRequest({
       requestId,
       accept,
       adminNote: readFormString(form, 'admin_note'),
     });
-    return redirect(
-      '/admin/prosby/?ok=' +
-        encodeURIComponent(accept ? 'Zaakceptowano — notatka jest publiczna.' : 'Odrzucono prośbę.'),
-    );
+    const pub = result.publication;
+    const okMsg = accept
+      ? pub
+        ? `Zaakceptowano — /przedmioty/${pub.subject_slug}/${pub.slug}/`
+        : 'Zaakceptowano.'
+      : 'Odrzucono prośbę.';
+    return redirect(`${back}&ok=` + encodeURIComponent(okMsg));
   } catch (error) {
     return redirect(
-      '/admin/prosby/?error=' +
+      `${back}&error=` +
         encodeURIComponent(error instanceof Error ? error.message : 'Nie udało się rozpatrzyć.'),
     );
   }

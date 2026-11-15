@@ -8,8 +8,11 @@ import CsrfField from '../../../components/account/CsrfField.astro';
 import NoteScripts from '../../../components/NoteScripts.astro';
 import Toc from '../../../components/Toc.astro';
 import { formatDate, isoDate } from '../../../lib/format';
+import { noteUrl } from '../../../lib/notes';
 import { getNoteByUserAndSlug } from '../../../lib/server/user-notes';
+import { getPublicationForSourceNote } from '../../../lib/server/publication-notes';
 import { latestRequestForNote } from '../../../lib/server/publications';
+import { listSubjectOptions } from '../../../lib/server/subject-options';
 import { renderUserMarkdown } from '../../../markdown/user.mjs';
 
 if (!Astro.locals.user) {
@@ -24,8 +27,13 @@ if (!note) {
 
 const { html, headings } = await renderUserMarkdown(note.body);
 const request = await latestRequestForNote(note.id);
+const publication = await getPublicationForSourceNote(note.id);
+const subjects = await listSubjectOptions();
 const error = Astro.url.searchParams.get('error');
 const ok = Astro.url.searchParams.get('ok');
+const pending = request?.status === 'pending';
+const canPublish = !publication && !pending;
+const canUpdate = Boolean(publication) && !pending;
 ---
 
 <Base title={note.title} description={note.description ?? undefined}>
@@ -34,14 +42,14 @@ const ok = Astro.url.searchParams.get('ok');
       <a class="button button-secondary" href="/moje/">Wróć</a>
       <a class="button" href={`/moje/${note.slug}/edytuj/`}>Edytuj</a>
       {
-        note.is_public && (
-          <a class="button button-secondary" href={`/u/${Astro.locals.user.username}/${note.slug}/`}>
+        publication && (
+          <a class="button button-secondary" href={noteUrl(publication.subject_slug, publication.slug)}>
             Widok publiczny
           </a>
         )
       }
     </nav>
-    <form method="post" action="/api/notes/delete" onsubmit="return confirm('Usunąć tę notatkę?');">
+    <form method="post" action="/api/notes/delete" onsubmit="return confirm('Usunąć tę notatkę? Publikacja na stronie (jeśli jest) zostaje.');">
       <CsrfField />
       <input type="hidden" name="slug" value={note.slug} />
       <button class="button button-danger" type="submit">Usuń</button>
@@ -61,15 +69,26 @@ const ok = Astro.url.searchParams.get('ok');
             Aktualizacja: <time datetime={isoDate(note.updated_at)}>{formatDate(note.updated_at)}</time>
           </span>
           {
-            note.is_public ? (
-              <span class="badge badge-public">publiczna</span>
-            ) : request?.status === 'pending' ? (
+            publication ? (
+              <span class="badge badge-public">opublikowana</span>
+            ) : pending ? (
               <span class="badge badge-pending">czeka na akceptację</span>
             ) : (
               <span class="badge">prywatna</span>
             )
           }
         </p>
+        {
+          publication && (
+            <p class="hint">
+              Publikacja:{' '}
+              <a href={noteUrl(publication.subject_slug, publication.slug)}>
+                /przedmioty/{publication.subject_slug}/{publication.slug}/
+              </a>
+              {' '}(edycje lokalne nie zmieniają publikacji, dopóki nie wyślesz aktualizacji)
+            </p>
+          )
+        }
       </header>
 
       <Toc headings={headings} variant="mobile" />
@@ -81,17 +100,58 @@ const ok = Astro.url.searchParams.get('ok');
   </div>
 
   {
-    !note.is_public && request?.status !== 'pending' && (
-      <section class="publish-request-panel">
+    canPublish && (
+      <section class="publish-request-panel" data-publish-panel>
         <h2 class="publish-request-title">Prośba o upublicznienie</h2>
         <p class="publish-request-lead">
-          Admin (GitHub M1CH4L9) zobaczy prośbę i może zaakceptować albo odrzucić.
+          Po akceptacji snapshot trafi na stronę główną w wybranym przedmiocie. Linki współdzielone to osobna sprawa.
         </p>
         <form class="auth-form" method="post" action="/api/notes/publish-request">
           <CsrfField />
           <input type="hidden" name="slug" value={note.slug} />
+          <input type="hidden" name="kind" value="publish" />
+
+          <fieldset class="publish-subject-fieldset">
+            <legend>Przedmiot</legend>
+            <label class="choice-row">
+              <input type="radio" name="subject_mode" value="existing" checked data-subject-mode />
+              <span>Istniejący</span>
+            </label>
+            <div class="field" data-subject-existing>
+              <label class="visually-hidden" for="subject_slug">Przedmiot</label>
+              <select id="subject_slug" name="subject_slug" required>
+                <option value="">Wybierz…</option>
+                {subjects.map((s) => (
+                  <option value={s.slug}>
+                    {s.title}
+                    {s.fullName ? ` — ${s.fullName}` : ''}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <label class="choice-row">
+              <input type="radio" name="subject_mode" value="new" data-subject-mode />
+              <span>Zgłoś nowy</span>
+            </label>
+            <div class="publish-new-subject" data-subject-new hidden>
+              <div class="field">
+                <label for="proposed_subject_title">Nazwa (np. BSI)</label>
+                <input id="proposed_subject_title" name="proposed_subject_title" maxlength="80" />
+              </div>
+              <div class="field">
+                <label for="proposed_subject_full_name">Pełna nazwa (opcjonalnie)</label>
+                <input id="proposed_subject_full_name" name="proposed_subject_full_name" maxlength="200" />
+              </div>
+              <div class="field">
+                <label for="proposed_subject_description">Opis (opcjonalnie)</label>
+                <input id="proposed_subject_description" name="proposed_subject_description" maxlength="500" />
+              </div>
+            </div>
+          </fieldset>
+
           <div class="field">
-            <label for="message">Wiadomość (opcjonalnie)</label>
+            <label for="message">Wiadomość do admina (opcjonalnie)</label>
             <input id="message" name="message" maxlength="500" />
           </div>
           <button class="button" type="submit">Wyślij prośbę</button>
@@ -100,5 +160,156 @@ const ok = Astro.url.searchParams.get('ok');
     )
   }
 
+  {
+    canUpdate && publication && (
+      <section class="publish-request-panel" data-publish-panel>
+        <h2 class="publish-request-title">Zaktualizuj publikację</h2>
+        <p class="publish-request-lead">
+          Wysyła snapshot bieżącej prywatnej notatki. Admin akceptuje; możesz ograniczyć pola.
+        </p>
+        <form class="auth-form" method="post" action="/api/notes/publish-request">
+          <CsrfField />
+          <input type="hidden" name="slug" value={note.slug} />
+          <input type="hidden" name="kind" value="update" />
+
+          <fieldset class="publish-apply-fieldset">
+            <legend>Co zaktualizować</legend>
+            <label class="choice-row">
+              <input type="checkbox" name="apply_title" checked />
+              <span>Tytuł</span>
+            </label>
+            <label class="choice-row">
+              <input type="checkbox" name="apply_description" checked />
+              <span>Opis</span>
+            </label>
+            <label class="choice-row">
+              <input type="checkbox" name="apply_body" checked />
+              <span>Treść</span>
+            </label>
+            <label class="choice-row">
+              <input type="checkbox" name="apply_subject" data-apply-subject />
+              <span>Przedmiot</span>
+            </label>
+          </fieldset>
+
+          <div data-update-subject hidden>
+            <fieldset class="publish-subject-fieldset">
+              <legend>Nowy przedmiot</legend>
+              <label class="choice-row">
+                <input type="radio" name="subject_mode" value="existing" checked data-subject-mode />
+                <span>Istniejący</span>
+              </label>
+              <div class="field" data-subject-existing>
+                <label class="visually-hidden" for="subject_slug_upd">Przedmiot</label>
+                <select id="subject_slug_upd" name="subject_slug">
+                  <option value="">Wybierz…</option>
+                  {subjects.map((s) => (
+                    <option value={s.slug} selected={s.slug === publication.subject_slug}>
+                      {s.title}
+                      {s.fullName ? ` — ${s.fullName}` : ''}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <label class="choice-row">
+                <input type="radio" name="subject_mode" value="new" data-subject-mode />
+                <span>Zgłoś nowy</span>
+              </label>
+              <div class="publish-new-subject" data-subject-new hidden>
+                <div class="field">
+                  <label for="proposed_subject_title_upd">Nazwa</label>
+                  <input id="proposed_subject_title_upd" name="proposed_subject_title" maxlength="80" />
+                </div>
+                <div class="field">
+                  <label for="proposed_subject_full_name_upd">Pełna nazwa (opcjonalnie)</label>
+                  <input
+                    id="proposed_subject_full_name_upd"
+                    name="proposed_subject_full_name"
+                    maxlength="200"
+                  />
+                </div>
+                <div class="field">
+                  <label for="proposed_subject_description_upd">Opis (opcjonalnie)</label>
+                  <input
+                    id="proposed_subject_description_upd"
+                    name="proposed_subject_description"
+                    maxlength="500"
+                  />
+                </div>
+              </div>
+            </fieldset>
+          </div>
+
+          <div class="field">
+            <label for="message_upd">Wiadomość (opcjonalnie)</label>
+            <input id="message_upd" name="message" maxlength="500" />
+          </div>
+          <button class="button" type="submit">Zaktualizuj publikację</button>
+        </form>
+      </section>
+    )
+  }
+
+  {
+    pending && (
+      <section class="publish-request-panel">
+        <h2 class="publish-request-title">Prośba oczekuje</h2>
+        <p class="publish-request-lead">
+          {request?.kind === 'update' ? 'Aktualizacja' : 'Upublicznienie'} wysłane
+          {
+            request?.created_at && (
+              <>
+                {' '}
+                <time datetime={isoDate(request.created_at)}>{formatDate(request.created_at)}</time>
+              </>
+            )
+          }
+          . Admin rozpatrzy ją w panelu.
+        </p>
+      </section>
+    )
+  }
+
   <NoteScripts />
+
+  <script>
+    function bindPublishPanels() {
+      document.querySelectorAll('[data-publish-panel]').forEach((panel) => {
+        const applySubject = panel.querySelector('[data-apply-subject]');
+        const updateSubject = panel.querySelector('[data-update-subject]');
+        if (applySubject instanceof HTMLInputElement && updateSubject instanceof HTMLElement) {
+          const syncApply = () => {
+            updateSubject.hidden = !applySubject.checked;
+          };
+          applySubject.addEventListener('change', syncApply);
+          syncApply();
+        }
+
+        const syncMode = () => {
+          const checked = panel.querySelector('input[name="subject_mode"]:checked');
+          const mode = checked instanceof HTMLInputElement ? checked.value : 'existing';
+          const existing = panel.querySelector('[data-subject-existing]');
+          const neu = panel.querySelector('[data-subject-new]');
+          if (existing instanceof HTMLElement) existing.hidden = mode !== 'existing';
+          if (neu instanceof HTMLElement) neu.hidden = mode !== 'new';
+          const select = existing?.querySelector('select');
+          const titleInput = neu?.querySelector('input[name="proposed_subject_title"]');
+          if (select instanceof HTMLSelectElement) {
+            select.required = mode === 'existing' && !existing?.hasAttribute('hidden');
+          }
+          if (titleInput instanceof HTMLInputElement) {
+            titleInput.required = mode === 'new' && !(neu?.hasAttribute('hidden'));
+          }
+        };
+
+        panel.querySelectorAll('[data-subject-mode]').forEach((radio) => {
+          radio.addEventListener('change', syncMode);
+        });
+        syncMode();
+      });
+    }
+
+    bindPublishPanels();
+    document.addEventListener('astro:page-load', bindPublishPanels);
+  </script>
 </Base>

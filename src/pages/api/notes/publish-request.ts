@@ -7,7 +7,7 @@ import {
   requireUser,
 } from '../../../lib/server/http';
 import { getNoteByUserAndSlug } from '../../../lib/server/user-notes';
-import { requestPublish } from '../../../lib/server/publications';
+import { requestPublish, requestUpdatePublication } from '../../../lib/server/publications';
 
 export const prerender = false;
 
@@ -30,11 +30,44 @@ export const POST: APIRoute = async (context) => {
     return redirect('/moje/?error=' + encodeURIComponent('Nie ma takiej notatki.'));
   }
 
+  const kind = readFormString(form, 'kind') || 'publish';
+  const subjectMode = readFormString(form, 'subject_mode');
+  const subjectSlug = subjectMode === 'existing' ? readFormString(form, 'subject_slug') : '';
+  const proposedSubjectTitle =
+    subjectMode === 'new' ? readFormString(form, 'proposed_subject_title') : '';
+  const proposedSubjectFullName =
+    subjectMode === 'new' ? readFormString(form, 'proposed_subject_full_name') : '';
+  const proposedSubjectDescription =
+    subjectMode === 'new' ? readFormString(form, 'proposed_subject_description') : '';
+
   try {
+    if (kind === 'update') {
+      await requestUpdatePublication({
+        userId: auth.user.id,
+        note,
+        message: readFormString(form, 'message'),
+        subjectSlug: subjectSlug || undefined,
+        proposedSubjectTitle: proposedSubjectTitle || undefined,
+        proposedSubjectFullName: proposedSubjectFullName || undefined,
+        proposedSubjectDescription: proposedSubjectDescription || undefined,
+        applyTitle: form.get('apply_title') === 'on',
+        applyDescription: form.get('apply_description') === 'on',
+        applyBody: form.get('apply_body') === 'on',
+        applySubject: form.get('apply_subject') === 'on',
+      });
+      return redirect(
+        `/moje/${slug}/?ok=` + encodeURIComponent('Wysłano prośbę o aktualizację publikacji.'),
+      );
+    }
+
     await requestPublish({
       userId: auth.user.id,
       note,
       message: readFormString(form, 'message'),
+      subjectSlug: subjectSlug || undefined,
+      proposedSubjectTitle: proposedSubjectTitle || undefined,
+      proposedSubjectFullName: proposedSubjectFullName || undefined,
+      proposedSubjectDescription: proposedSubjectDescription || undefined,
     });
     return redirect(`/moje/${slug}/?ok=` + encodeURIComponent('Wysłano prośbę o upublicznienie.'));
   } catch (error) {

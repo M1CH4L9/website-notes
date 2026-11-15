@@ -4,7 +4,9 @@ import AccountNav from '../../components/AccountNav.astro';
 import { formatDate, isoDate } from '../../lib/format';
 import { listNotesForUser } from '../../lib/server/user-notes';
 import { listRequestsForUser } from '../../lib/server/publications';
+import { mapPublicationsForSourceNotes } from '../../lib/server/publication-notes';
 import { isDatabaseConfigured } from '../../lib/server/env';
+import { noteUrl } from '../../lib/notes';
 
 if (!Astro.locals.user) {
   return Astro.redirect('/logowanie?next=' + encodeURIComponent('/moje/'));
@@ -19,6 +21,9 @@ const requests = isDatabaseConfigured() ? await listRequestsForUser(user.id) : [
 const pendingByNote = new Map(
   requests.filter((r) => r.status === 'pending').map((r) => [r.note_id, r]),
 );
+const publicationByNote = isDatabaseConfigured()
+  ? await mapPublicationsForSourceNotes(notes.map((n) => n.id))
+  : new Map();
 ---
 
 <Base title="Moje notatki" description="Twoja prywatna sekcja notatek.">
@@ -50,6 +55,7 @@ const pendingByNote = new Map(
       <ul class="my-note-list">
         {notes.map((note) => {
           const pending = pendingByNote.get(note.id);
+          const publication = publicationByNote.get(note.id);
           return (
             <li class="my-note-list-item">
               <a class="my-note-list-title" href={`/moje/${note.slug}/`}>
@@ -60,17 +66,21 @@ const pendingByNote = new Map(
                   Aktualizacja:{' '}
                   <time datetime={isoDate(note.updated_at)}>{formatDate(note.updated_at)}</time>
                 </span>
-                {note.is_public ? (
-                  <span class="badge badge-public">publiczna</span>
+                {publication ? (
+                  <span class="badge badge-public">opublikowana</span>
                 ) : pending ? (
                   <span class="badge badge-pending">czeka na akceptację</span>
                 ) : (
                   <span class="badge">prywatna</span>
                 )}
                 <a href={`/moje/${note.slug}/edytuj/`}>Edytuj</a>
-                {note.is_public && (
-                  <a href={`/u/${user.username}/${note.slug}/`} target="_blank" rel="noopener">
-                    Podgląd publiczny
+                {publication && (
+                  <a
+                    href={noteUrl(publication.subject_slug, publication.slug)}
+                    target="_blank"
+                    rel="noopener"
+                  >
+                    Na homepage
                   </a>
                 )}
               </div>

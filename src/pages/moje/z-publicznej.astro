@@ -2,6 +2,8 @@
 import Base from '../../layouts/Base.astro';
 import CsrfField from '../../components/account/CsrfField.astro';
 import { getCollection } from 'astro:content';
+import { getPublicationById } from '../../lib/server/publication-notes';
+import { isDatabaseConfigured } from '../../lib/server/env';
 
 if (!Astro.locals.user) {
   return Astro.redirect(
@@ -11,11 +13,27 @@ if (!Astro.locals.user) {
 
 const subject = Astro.url.searchParams.get('subject') || '';
 const noteSlug = Astro.url.searchParams.get('note') || '';
-const notes = await getCollection('notes');
-const entry = notes.find((n) => n.id === `${subject}/${noteSlug}`);
+const pubId = Astro.url.searchParams.get('pub') || '';
 
-if (!entry) {
-  return Astro.redirect('/moje/?error=' + encodeURIComponent('Nie znaleziono notatki publicznej.'));
+let title = '';
+let publicationId = '';
+
+if (pubId && isDatabaseConfigured()) {
+  const pub = await getPublicationById(pubId);
+  if (!pub || !pub.is_active || pub.subject_slug !== subject || pub.slug !== noteSlug) {
+    return Astro.redirect('/moje/?error=' + encodeURIComponent('Nie znaleziono publikacji.'));
+  }
+  title = pub.title;
+  publicationId = pub.id;
+} else {
+  const notes = await getCollection('notes');
+  const entry = notes.find((n) => n.id === `${subject}/${noteSlug}`);
+  if (!entry) {
+    return Astro.redirect(
+      '/moje/?error=' + encodeURIComponent('Nie znaleziono notatki publicznej.'),
+    );
+  }
+  title = entry.data.title;
 }
 
 const sourcePath = `/przedmioty/${subject}/${noteSlug}/`;
@@ -25,7 +43,7 @@ const sourcePath = `/przedmioty/${subject}/${noteSlug}/`;
   <div class="auth-panel" style="width:min(100%,32rem);">
     <h1 class="page-title">Kopiuj do moich</h1>
     <p class="page-lead">
-      Utworzy prywatną kopię <strong>{entry.data.title}</strong> w Twojej sekcji. Możesz ją potem edytować.
+      Utworzy prywatną kopię <strong>{title}</strong> w Twojej sekcji. Możesz ją potem edytować.
     </p>
     <p class="hint">Źródło: <a href={sourcePath}>{sourcePath}</a></p>
 
@@ -33,6 +51,7 @@ const sourcePath = `/przedmioty/${subject}/${noteSlug}/`;
       <CsrfField />
       <input type="hidden" name="subject" value={subject} />
       <input type="hidden" name="note" value={noteSlug} />
+      {publicationId && <input type="hidden" name="publication_id" value={publicationId} />}
       <div class="form-actions">
         <button class="button" type="submit">Skopiuj</button>
         <a class="button button-secondary" href={sourcePath}>Anuluj</a>
