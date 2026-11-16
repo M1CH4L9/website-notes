@@ -1,3 +1,4 @@
+import rehypeRaw from 'rehype-raw';
 import { createMarkdownProcessor } from '@astrojs/markdown-remark';
 import rehypeExternalLinks from 'rehype-external-links';
 import rehypeSanitize, { defaultSchema } from 'rehype-sanitize';
@@ -161,4 +162,26 @@ export async function renderUserMarkdown(source) {
     html: result.code,
     headings: result.metadata?.headings ?? [],
   };
+}
+
+// PDF zachowuje również bezpieczny HTML (np. summary z treścią odpowiedzi).
+let pdfProcessorPromise;
+export async function renderPdfMarkdown(source) {
+  pdfProcessorPromise ??= createMarkdownProcessor({
+    remarkPlugins,
+    rehypePlugins: [
+      rehypeRaw,
+      ...rehypePlugins,
+      [rehypeSanitize, {
+        ...schema,
+        tagNames: [...schema.tagNames, 'details', 'summary'],
+        attributes: { ...schema.attributes, details: ['open'], summary: [] },
+      }],
+    ],
+    shikiConfig,
+    smartypants: false,
+  });
+  const processor = await pdfProcessorPromise;
+  const result = await processor.render(source || '');
+  return { html: result.code };
 }

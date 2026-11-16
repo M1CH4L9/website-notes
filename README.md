@@ -129,11 +129,19 @@ public/oauth-icon.png     ikona do GitHub OAuth App
 
 PDF/zdjęcia, kursory live (Yjs) - schemat share nie blokuje.
 
-## Test pobierania PDF
+## Pobieranie PDF
 
-Eksport generuje osobną jasną kopię artykułu poza ekranem. Nie zmienia motywu, pozycji przewijania ani stanu rozwijanych sekcji strony. W PDF rozwijane sekcje są otwarte, kod jest zawijany do szerokości A4, a elementy sterujące pomijane. Błąd eksportu pokazuje komunikat i pozwala ponowić próbę; nie otwiera automatycznie drukowania systemowego. PDF jest renderowany jako obraz (tekst nie jest zaznaczalny).
+`/api/notes/download?...&format=pdf` generuje PDF po stronie serwera przez Puppeteer i Chromium (pakiet `@sparticuz/chromium`, dołączony do funkcji Vercel). Wykorzystuje te same kontrole dostępu co eksport Markdown: prywatną notatkę pobiera właściciel, udostępnioną - posiadacz aktywnego linku. Nie otwiera okna drukowania ani nie zmienia motywu strony.
 
-Test regresji w Chromium (po `npx playwright install chromium`):
+Dokument A4 ma tekst do zaznaczania i wyszukiwania, osadzone fonty, numerację stron, podświetlanie kodu, automatyczny podział treści i powtarzane nagłówki tabel. Kod zawija długie linie, a rozwijane sekcje są otwarte w PDF. Nie korzysta z canvas ani z obrazów całych stron. Blok dłuższy niż strona dzieli się między stronami.
+
+Generator uruchamia się w Node.js 24. Konfiguracja Astro dołącza Chromium, fonty i lokalne obrazki do funkcji; nie potrzeba klucza zewnętrznej usługi. Pierwsze pobranie może potrwać kilka sekund. Jedna instancja obsługuje jeden eksport naraz; zajętość zwraca 503 z komunikatem ponowienia. Funkcja ma limit 60 sekund. `PDF_CHROMIUM_PATH` opcjonalnie wskazuje własny Chromium lokalnie.
+
+Treść jest renderowana przez sanitowany potok Markdown. Przeglądarka generatora ma wyłączony JavaScript i zablokowaną sieć; obrazki mogą pochodzić z `notatki/` lub `public/`. Niedostępne i zewnętrzne obrazki powodują błąd eksportu zamiast cichego pomijania. JSX z własnymi komponentami wymaga osobnego wsparcia; obecne notatki MDX z HTML i wzorami są obsługiwane.
+
+### Test regresji
+
+Wymaga Chromium dla Playwright (`npx playwright install chromium`) i narzędzia `pdftotext` z Popplera.
 
 ```sh
 npm run dev -- --port 4321
@@ -141,4 +149,4 @@ npm run dev -- --port 4321
 npm run test:pdf
 ```
 
-Opcjonalnie ustaw `PDF_TEST_URL` i `CHROMIUM_PATH`, aby użyć innego serwera lub zainstalowanego Chromium. Test pobiera rzeczywiste pliki w czterech kombinacjach motywu i szerokości ekranu oraz sprawdza brak przełączania motywu, znikania przycisków, przewijania, rozwijania oryginalnej treści i pozostawionych elementów eksportu. Sprawdza również obsługę niedostępnego obrazka bez otwierania drukowania. Pliki do kontroli wizualnej zapisuje w katalogu tymczasowym.
+Opcjonalne `PDF_TEST_URL` i `CHROMIUM_PATH` wybierają serwer oraz przeglądarkę testową. Test pobiera rzeczywiste PDF w czterech kombinacjach motywu i szerokości, sprawdza brak migania, zmiany pozycji, chowania przycisków i rozwijania oryginalnej treści. Ekstrakcja tekstu sprawdza również początek, kod, polskie znaki i zakończenie dokumentu. Symulowany błąd serwera pozwala ponowić próbę bez drukowania. Pliki do kontroli wizualnej trafiają do katalogu tymczasowego.

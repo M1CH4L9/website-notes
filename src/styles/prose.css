@@ -135,11 +135,6 @@
 }
 
 /* Overlay podczas generowania PDF w przeglądarce */
-/* Niewidoczny kontener biblioteki nie może przechwytywać kliknięć strony. */
-.html2pdf__overlay {
-  pointer-events: none !important;
-}
-
 .note-pdf-busy {
   position: fixed;
   inset: auto 1rem 1rem auto;

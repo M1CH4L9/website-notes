@@ -4,6 +4,7 @@ import { mkdtemp, readFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { chromium } from 'playwright';
+import { execFileSync } from 'node:child_process';
 const base = process.env.PDF_TEST_URL || 'http://127.0.0.1:4321';
 const output = await mkdtemp(join(tmpdir(), 'note-pdf-'));
 const browser = await chromium.launch({
@@ -35,9 +36,6 @@ try {
    const tick=()=>{
     if(!window.__pdfSampling)return;
     const current=actions.getBoundingClientRect();
-    const exportDoc=document.querySelector('iframe[title="Przygotowanie pliku PDF"]')?.contentDocument;
-    const source=exportDoc?.querySelector('.note-main');
-    if(source?.style.height && source.style.height!=='auto')window.__pdfVisualFailures.push('Fixed article height can truncate paginated PDF');
     if(getComputedStyle(actions).display==='none'||Math.abs(current.top-bounds.top)>1||getComputedStyle(document.body).backgroundColor!==background)window.__pdfVisualFailures.push('Visible page changed');
     requestAnimationFrame(tick);
    };requestAnimationFrame(tick);
@@ -52,17 +50,39 @@ try {
   assert.equal(state.x,initial.x);assert.equal(state.y,initial.y);assert.equal(state.width,initial.width);
   assert.deepEqual(errors,[]);
   const pdf=await readFile(file);assert.equal(pdf.subarray(0,5).toString(),'%PDF-');assert.ok(pdf.length>10000);
+  const text=execFileSync('pdftotext',['-layout',file,'-'],{encoding:'utf8'});
+  for(const fragment of ['Kolokwium 1', 'find /home', 'Skrót na', 'Więcej przykładów', 'szersze wyjaśnienia materiału'])assert.ok(text.includes(fragment),`Missing PDF text: ${fragment}`);
+  assert.ok(text.includes('właściciela'),'Polish characters are preserved');
   console.log(`PASS ${width}px / theme=${theme} / cute=${cute}: PDF, no flash, actions visible, details/scroll unchanged, cleanup`);
   if(width===390 && theme==='light') {
-   await page.evaluate(()=>{window.__printCalled=false;window.print=()=>{window.__printCalled=true;};const img=document.createElement('img');img.src='/missing-pdf-test-image.png';document.querySelector('.prose').append(img);});
+   await page.evaluate(()=>{window.__printCalled=false;window.print=()=>{window.__printCalled=true;};});
+   await page.route('**/api/notes/download?**', route=>route.fulfill({status:503,contentType:'application/json',body:JSON.stringify({error:'Nie udało się pobrać PDF. Spróbuj ponownie.'})}));
    await page.locator('.note-download-summary').click();await page.locator('[data-note-pdf]').click();
    await page.getByRole('alert').filter({hasText:'Nie udało się pobrać PDF'}).waitFor();
    assert.equal(await page.evaluate(()=>window.__printCalled),false);
    assert.equal(await page.locator('iframe[title="Przygotowanie pliku PDF"], .html2pdf__overlay').count(),0);
    assert.equal(await page.locator('[data-note-pdf]').isEnabled(),true);
-   console.log('PASS failed image: error message, retry enabled, no print dialog, cleanup');
+   console.log('PASS server failure: error message, retry enabled, no print dialog');
   }
   await page.close();
  }
+ const context=await browser.newContext();
+ for(const [subject,note,expected] of [
+  ['bsi','bsi-rozwiazania',['Rozwiązania','Sprawdzono kompletność']],
+  ['test','wzory-i-mdx',['Wzory i elementy MDX','Rozwiązanie zadania']],
+  ['test','formatowanie-tekstu',['Tabele','Obrazki']],
+ ]) {
+  const response=await context.request.get(`${base}/api/notes/download?kind=public&subject=${subject}&note=${note}&format=pdf`,{timeout:65000});
+  assert.equal(response.status(),200,`${note}: expected PDF response`);
+  const file=join(output,`${note}.pdf`);await import('node:fs/promises').then(async fs=>fs.writeFile(file,await response.body()));
+  const text=execFileSync('pdftotext',['-layout',file,'-'],{encoding:'utf8'});
+  for(const fragment of expected)assert.ok(text.includes(fragment),`Missing ${fragment} in ${note}`);
+  console.log(`PASS server PDF: ${note}, selectable text and final content`);
+ }
+ assert.equal((await context.request.get(`${base}/api/notes/download?kind=public&subject=bsi&note=missing&format=pdf`)).status(),404);
+ assert.equal((await context.request.get(`${base}/api/notes/download?kind=public&subject=bsi&note=bsi-kolokwium-1-praktyka&format=invalid`)).status(),400);
+ const privateResponse=await context.request.get(`${base}/api/notes/download?kind=mine&slug=private&format=pdf`);
+ assert.ok([401,503].includes(privateResponse.status()),'No private note access without login');
+ await context.close();
  console.log(`PDF files for visual inspection: ${output}`);
 } finally {await browser.close();}

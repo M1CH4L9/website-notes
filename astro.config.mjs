@@ -1,3 +1,4 @@
+import { globSync, statSync } from 'node:fs';
 import { defineConfig } from 'astro/config';
 import mdx from '@astrojs/mdx';
 import vercel from '@astrojs/vercel';
@@ -10,7 +11,7 @@ const productionHost = process.env.VERCEL_PROJECT_PRODUCTION_URL;
 export default defineConfig({
   site: productionHost ? `https://${productionHost}` : undefined,
   output: 'server',
-  adapter: vercel(),
+  adapter: vercel({ maxDuration: 60, includeFiles: [...globSync(['node_modules/@sparticuz/chromium/bin/*', 'node_modules/katex/dist/fonts/*', 'node_modules/@fontsource-variable/{figtree,jetbrains-mono}/files/*.woff2', 'node_modules/@fontsource-variable/{figtree,jetbrains-mono}/wght.css', 'notatki/**/*', 'public/**/*'])].filter(file => statSync(file).isFile()) }),
   integrations: [mdx()],
   redirects: {
     '/przedmioty': '/',

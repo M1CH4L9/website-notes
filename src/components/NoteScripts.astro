@@ -136,7 +136,9 @@
         pdfButton.disabled = true;
         try {
           const { exportNotePdf } = await import('../lib/note-pdf-client');
-          await exportNotePdf(filename);
+          const mdHref = root.querySelector<HTMLAnchorElement>('a[download]')?.href;
+          if (!mdHref) throw new Error('Brak adresu pobierania notatki.');
+          await exportNotePdf(filename, mdHref);
         } finally {
           pdfButton.disabled = false;
         }

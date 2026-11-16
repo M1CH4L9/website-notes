@@ -12,6 +12,19 @@ export const prerender = false;
 
 export const GET: APIRoute = async (context) => {
   const kind = context.url.searchParams.get('kind') || '';
+  const format = context.url.searchParams.get('format') || 'md';
+  if (!['md', 'pdf'].includes(format)) return json({ error: 'Nieznany format.' }, 400);
+  const respond = async (markdown: string, filename: string) => {
+    if (format === 'md') return markdownDownloadResponse(markdown, filename);
+    const { createNotePdf } = await import('../../../lib/server/note-pdf');
+    const bytes = await createNotePdf(markdown, context.url.searchParams.get('subject') || '');
+    return new Response(Buffer.from(bytes), { headers: {
+      'content-type': 'application/pdf',
+      'content-disposition': `attachment; filename="${filename}.pdf"`,
+      'cache-control': 'private, no-store',
+      'x-content-type-options': 'nosniff',
+    } });
+  };
 
   try {
     if (kind === 'public') {
@@ -29,7 +42,7 @@ export const GET: APIRoute = async (context) => {
           updated: entry.data.updated,
           body,
         });
-        return markdownDownloadResponse(markdown, noteFilename(noteSlug, entry.data.title));
+        return await respond(markdown, noteFilename(noteSlug, entry.data.title));
       }
 
       if (!isDatabaseConfigured()) return json({ error: 'Nie znaleziono notatki.' }, 404);
@@ -41,7 +54,7 @@ export const GET: APIRoute = async (context) => {
         updated: pub.updated_at,
         body: pub.body,
       });
-      return markdownDownloadResponse(markdown, noteFilename(noteSlug, pub.title));
+      return await respond(markdown, noteFilename(noteSlug, pub.title));
     }
 
     if (kind === 'publication') {
@@ -56,7 +69,7 @@ export const GET: APIRoute = async (context) => {
         updated: pub.updated_at,
         body: pub.body,
       });
-      return markdownDownloadResponse(markdown, noteFilename(pub.slug, pub.title));
+      return await respond(markdown, noteFilename(pub.slug, pub.title));
     }
 
     if (kind === 'mine') {
@@ -73,7 +86,7 @@ export const GET: APIRoute = async (context) => {
         updated: note.updated_at,
         body: note.body,
       });
-      return markdownDownloadResponse(markdown, noteFilename(note.slug, note.title));
+      return await respond(markdown, noteFilename(note.slug, note.title));
     }
 
     if (kind === 'share') {
@@ -89,12 +102,13 @@ export const GET: APIRoute = async (context) => {
         updated: note.updated_at,
         body: note.body,
       });
-      return markdownDownloadResponse(markdown, noteFilename(note.slug, note.title));
+      return await respond(markdown, noteFilename(note.slug, note.title));
     }
 
     return json({ error: 'Nieznany rodzaj pobierania.' }, 400);
   } catch (error) {
     console.error('[notes/download]', error);
-    return json({ error: 'Nie udało się przygotować pliku.' }, 500);
+    const busy = error instanceof Error && error.message === 'PDF_BUSY';
+    return json({ error: busy ? 'Trwa generowanie innego PDF. Spróbuj za chwilę.' : format === 'pdf' ? 'Nie udało się przygotować pliku PDF lub wczytać jego obrazków. Spróbuj ponownie albo pobierz Markdown.' : 'Nie udało się przygotować pliku.' }, busy ? 503 : 500);
   }
 };
