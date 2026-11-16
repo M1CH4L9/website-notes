@@ -1274,6 +1274,64 @@ body.is-editor-page .site-main > .container {
 }
 
 @media print {
+  /*
+   * PDF zawsze w jasnym motywie: ciemny/cute na ekranie nie ma znaczenia.
+   * Nadpisujemy tokeny na :root i html, żeby przebić data-theme / data-cute.
+   */
+  :root,
+  html,
+  html[data-theme='dark'],
+  html[data-theme='light'],
+  html[data-cute='true'],
+  html[data-cute='true'][data-theme='dark'],
+  html[data-cute='true'][data-theme='light'] {
+    color-scheme: light !important;
+
+    --font-heading: var(--font-body);
+    --heading-weight: 700;
+    --heading-tracking: -0.015em;
+    --radius-s: 6px;
+    --radius-m: 8px;
+    --radius-l: 10px;
+
+    --bg: #ffffff;
+    --surface: #ffffff;
+    --surface-sunken: #f6f8fa;
+    --border: #d1d9e0;
+    --border-strong: #a7b1bb;
+    --text: #1f2328;
+    --text-muted: #59636e;
+    --accent: #0969da;
+    --accent-hover: #0550ae;
+    --accent-soft: #e7f2ff;
+    --on-accent: #ffffff;
+    --focus-ring: #0969da;
+    --selection: #b6daff;
+    --shadow-card: none;
+    --shadow-card-hover: none;
+
+    --code-bg: #eef2f6;
+    --code-header-bg: #e4e9ef;
+    --code-border: #c8d1da;
+    --code-inline-bg: #eff1f3;
+    --code-inline-text: #1f2328;
+    --code-scroll-shadow: transparent;
+
+    --callout-note: #0969da;
+    --callout-tip: #1a7f37;
+    --callout-important: #8250df;
+    --callout-warning: #8f5f00;
+    --callout-caution: #cf222e;
+
+    --cat-display: none;
+  }
+
+  html,
+  body {
+    background: #ffffff !important;
+    color: #1f2328 !important;
+  }
+
   .site-header,
   .site-footer,
   .skip-link,
@@ -1326,6 +1384,38 @@ body.is-editor-page .site-main > .container {
   .table-wrap,
   figure {
     break-inside: avoid;
+  }
+
+  /* Zachowaj jasne tła kodu / calloutów w PDF (Chrome lubi je pomijać). */
+  .code-block,
+  .code-header,
+  .prose pre,
+  .prose :not(pre) > code,
+  .table-wrap,
+  .callout {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .prose pre {
+    background: var(--code-bg) !important;
+  }
+
+  /* Składnia Shiki: zawsze wariant jasny, niezależnie od data-theme / cute. */
+  .astro-code,
+  .astro-code span,
+  html[data-theme='dark'] .astro-code,
+  html[data-theme='dark'] .astro-code span,
+  html[data-cute='true'] .astro-code,
+  html[data-cute='true'] .astro-code span,
+  html[data-cute='true'][data-theme='dark'] .astro-code,
+  html[data-cute='true'][data-theme='dark'] .astro-code span,
+  html[data-cute='true'][data-theme='light'] .astro-code,
+  html[data-cute='true'][data-theme='light'] .astro-code span {
+    color: var(--shiki-light) !important;
+    font-style: var(--shiki-light-font-style) !important;
+    font-weight: var(--shiki-light-font-weight) !important;
+    text-decoration: var(--shiki-light-text-decoration) !important;
   }
 
   mark.note-search-hit {
