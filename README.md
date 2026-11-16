@@ -128,3 +128,17 @@ public/oauth-icon.png     ikona do GitHub OAuth App
 ## Poza zakresem (na później)
 
 PDF/zdjęcia, kursory live (Yjs) - schemat share nie blokuje.
+
+## Test pobierania PDF
+
+Eksport generuje osobną jasną kopię artykułu poza ekranem. Nie zmienia motywu, pozycji przewijania ani stanu rozwijanych sekcji strony. W PDF rozwijane sekcje są otwarte, kod jest zawijany do szerokości A4, a elementy sterujące pomijane. Błąd eksportu pokazuje komunikat i pozwala ponowić próbę; nie otwiera automatycznie drukowania systemowego. PDF jest renderowany jako obraz (tekst nie jest zaznaczalny).
+
+Test regresji w Chromium (po `npx playwright install chromium`):
+
+```sh
+npm run dev -- --port 4321
+# W drugim terminalu:
+npm run test:pdf
+```
+
+Opcjonalnie ustaw `PDF_TEST_URL` i `CHROMIUM_PATH`, aby użyć innego serwera lub zainstalowanego Chromium. Test pobiera rzeczywiste pliki w czterech kombinacjach motywu i szerokości ekranu oraz sprawdza brak przełączania motywu, znikania przycisków, przewijania, rozwijania oryginalnej treści i pozostawionych elementów eksportu. Sprawdza również obsługę niedostępnego obrazka bez otwierania drukowania. Pliki do kontroli wizualnej zapisuje w katalogu tymczasowym.

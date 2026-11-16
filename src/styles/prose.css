@@ -135,6 +135,11 @@
 }
 
 /* Overlay podczas generowania PDF w przeglądarce */
+/* Niewidoczny kontener biblioteki nie może przechwytywać kliknięć strony. */
+.html2pdf__overlay {
+  pointer-events: none !important;
+}
+
 .note-pdf-busy {
   position: fixed;
   inset: auto 1rem 1rem auto;
@@ -168,39 +173,6 @@
 .note-pdf-busy[hidden],
 .note-pdf-fallback-tip[hidden] {
   display: none !important;
-}
-
-/* Ukryj chrome UI w klatce html2canvas */
-body.is-pdf-export .note-head-actions,
-body.is-pdf-export .note-download,
-body.is-pdf-export .note-search,
-body.is-pdf-export .toc-mobile,
-body.is-pdf-export .note-pager,
-body.is-pdf-export .code-copy,
-body.is-pdf-export .heading-anchor {
-  display: none !important;
-}
-
-body.is-pdf-export .prose details {
-  break-inside: avoid;
-}
-
-/* html2canvas źle znosi gradienty przewijania i max-content w pre */
-body.is-pdf-export .prose pre {
-  background: var(--code-bg) !important;
-  overflow: visible !important;
-  white-space: pre-wrap !important;
-  overflow-wrap: anywhere !important;
-}
-
-body.is-pdf-export .prose pre code {
-  width: auto !important;
-  min-width: 0 !important;
-  white-space: pre-wrap !important;
-}
-
-body.is-pdf-export .table-wrap {
-  overflow: visible !important;
 }
 
 /* Wyszukiwanie w notatce */

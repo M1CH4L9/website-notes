@@ -11,7 +11,8 @@
     "build": "node scripts/migrate.mjs && astro build",
     "preview": "astro preview",
     "check": "astro check",
-    "db:migrate": "node scripts/migrate.mjs --require"
+    "db:migrate": "node scripts/migrate.mjs --require",
+    "test:pdf": "node scripts/test-note-pdf.mjs"
   },
   "dependencies": {
     "@astrojs/markdown-remark": "^7.3.9",
@@ -32,6 +33,7 @@
   "devDependencies": {
     "@astrojs/check": "^0.9.12",
     "@types/pg": "^8.23.1",
+    "playwright": "^1.65.1",
     "typescript": "^6.0.3"
   },
   "overrides": {
