@@ -692,6 +692,48 @@ body.is-editor-page .site-main > .container {
 
 /* .page-meta: układ flex w account.css (badge obok daty, bez nachodzenia). */
 
+/* Strona główna: wyszukiwanie przedmiotów */
+
+.subject-search {
+  margin: 0 0 1.25rem;
+}
+
+.subject-search-input,
+.note-search-input {
+  width: 100%;
+  min-height: 2.65rem;
+  padding: 0.55rem 0.85rem;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-s);
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  line-height: 1.3;
+  box-shadow: var(--shadow-card);
+}
+
+.subject-search-input::placeholder,
+.note-search-input::placeholder {
+  color: var(--text-muted);
+}
+
+.subject-search-input:focus-visible,
+.note-search-input:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+.subject-search-empty,
+.note-search-empty {
+  margin-top: 0.75rem;
+  color: var(--text-muted);
+  font-size: 0.9375rem;
+}
+
+.subject-search-empty[hidden] {
+  display: none !important;
+}
+
 /* Strona główna: przedmioty */
 
 .subject-grid {
@@ -712,6 +754,10 @@ body.is-editor-page .site-main > .container {
 .subject-item {
   position: relative;
   display: flex;
+}
+
+.subject-item[hidden] {
+  display: none !important;
 }
 
 .subject-card {
@@ -1235,10 +1281,18 @@ body.is-editor-page .site-main > .container {
   .toc-mobile,
   .note-aside,
   .note-pager,
+  .note-download,
+  .note-search,
+  .note-copy-action,
+  .note-head-actions,
+  .account-toolbar,
+  .publish-request-panel,
+  .editor-toast,
   .code-copy,
   .heading-anchor,
   .list-cat,
-  .card-cat {
+  .card-cat,
+  .pager-cat {
     display: none !important;
   }
 
@@ -1252,6 +1306,10 @@ body.is-editor-page .site-main > .container {
 
   .note-main {
     max-width: none;
+  }
+
+  .note-head {
+    border-bottom-color: #bbb;
   }
 
   .prose pre {
@@ -1268,5 +1326,11 @@ body.is-editor-page .site-main > .container {
   .table-wrap,
   figure {
     break-inside: avoid;
+  }
+
+  mark.note-search-hit {
+    background: transparent;
+    color: inherit;
+    box-shadow: none;
   }
 }

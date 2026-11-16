@@ -49,6 +49,192 @@
   border-bottom: 1px solid var(--border);
 }
 
+.note-head-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+  align-items: center;
+  margin-top: 1rem;
+}
+
+.note-head-actions .button,
+.note-head-actions .note-download-summary {
+  font-weight: 700;
+  box-shadow: var(--shadow-card-hover);
+}
+
+/* Pobieranie notatki */
+
+.note-download {
+  position: relative;
+  display: inline-block;
+}
+
+.note-download-summary {
+  list-style: none;
+}
+
+.note-download-summary::-webkit-details-marker {
+  display: none;
+}
+
+.note-download-summary::after {
+  content: '';
+  width: 0.4rem;
+  height: 0.4rem;
+  margin-left: 0.15rem;
+  border-right: 1.5px solid currentColor;
+  border-bottom: 1.5px solid currentColor;
+  transform: rotate(45deg) translateY(-1px);
+  opacity: 0.85;
+}
+
+.note-download[open] .note-download-summary::after {
+  transform: rotate(225deg) translateY(-1px);
+}
+
+.note-download-menu {
+  position: absolute;
+  top: calc(100% + 0.35rem);
+  left: 0;
+  z-index: 5;
+  min-width: 12.5rem;
+  padding: 0.3rem;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-s);
+  background: var(--surface);
+  box-shadow: var(--shadow-card-hover);
+}
+
+.note-download-item {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  min-height: 2.25rem;
+  padding: 0.4rem 0.7rem;
+  border: 0;
+  border-radius: calc(var(--radius-s) - 2px);
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-weight: 600;
+  text-align: left;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.note-download-item:hover,
+.note-download-item:focus-visible {
+  background: var(--surface-sunken);
+  color: var(--text);
+}
+
+/* Wyszukiwanie w notatce */
+
+.note-search {
+  margin-bottom: 0.85rem;
+}
+
+.note-search-desktop {
+  display: none;
+}
+
+.note-search-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  align-items: center;
+}
+
+.note-search-input {
+  flex: 1 1 11rem;
+  min-width: 0;
+}
+
+.note-search-nav {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  flex: none;
+  margin-left: auto;
+}
+
+.note-search-nav[hidden],
+.note-search-empty[hidden] {
+  display: none !important;
+}
+
+.note-search-count {
+  min-width: 2.4rem;
+  color: var(--text-muted);
+  font-size: 0.8125rem;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.note-search-step {
+  display: inline-grid;
+  place-items: center;
+  width: 1.85rem;
+  height: 1.85rem;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-s);
+  background: var(--surface);
+  color: var(--text);
+  cursor: pointer;
+}
+
+.note-search-step:hover {
+  border-color: var(--border-strong);
+  background: var(--surface-sunken);
+}
+
+.note-search-empty {
+  margin-top: 0.45rem;
+  font-size: 0.8125rem;
+}
+
+.toc-link.is-search-match {
+  color: var(--accent);
+  border-left-color: color-mix(in srgb, var(--accent) 55%, transparent);
+}
+
+mark.note-search-hit {
+  padding: 0.05em 0.12em;
+  border-radius: 0.2em;
+  background: color-mix(in srgb, var(--accent) 28%, transparent);
+  color: inherit;
+  box-decoration-break: clone;
+}
+
+mark.note-search-hit.is-active {
+  background: color-mix(in srgb, var(--accent) 48%, transparent);
+  outline: 1px solid color-mix(in srgb, var(--accent) 65%, transparent);
+}
+
+@media (min-width: 60rem) {
+  .note-search-mobile {
+    display: none;
+  }
+
+  .note-search-desktop {
+    display: block;
+  }
+
+  .note-search-desktop .note-search-input {
+    flex: 1 1 100%;
+    min-height: 2.35rem;
+    font-size: 0.9063rem;
+  }
+
+  .note-search-desktop .note-search-nav {
+    width: 100%;
+    justify-content: flex-end;
+    margin-left: 0;
+  }
+}
+
 /* Spis treści */
 
 .toc-list,
@@ -56,6 +242,10 @@
   margin: 0;
   padding: 0;
   list-style: none;
+}
+
+.toc-list li[hidden] {
+  display: none !important;
 }
 
 .toc-link {
