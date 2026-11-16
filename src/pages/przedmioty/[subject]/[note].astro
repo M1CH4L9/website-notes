@@ -12,6 +12,7 @@ import NoteSearch from '../../../components/NoteSearch.astro';
 import Toc from '../../../components/Toc.astro';
 import Base from '../../../layouts/Base.astro';
 import { formatDate, isoDate } from '../../../lib/format';
+import { noteFilename } from '../../../lib/note-export';
 import { getSubjects } from '../../../lib/notes';
 import { renderUserMarkdown } from '../../../markdown/user.mjs';
 
@@ -46,6 +47,7 @@ if (note.entry) {
 const downloadHref = note.publication
   ? `/api/notes/download?kind=publication&id=${encodeURIComponent(note.publication.id)}`
   : `/api/notes/download?kind=public&subject=${encodeURIComponent(subject.slug)}&note=${encodeURIComponent(note.slug)}`;
+const pdfFilename = noteFilename(note.slug, note.title);
 
 const copyHref = note.publication
   ? `/moje/z-publicznej?subject=${subject.slug}&note=${note.slug}&pub=${note.publication.id}`
@@ -74,7 +76,7 @@ const copyHref = note.publication
           )
         }
         <div class="note-head-actions">
-          <NoteDownload mdHref={downloadHref} />
+          <NoteDownload mdHref={downloadHref} filename={pdfFilename} />
           <a class="button" href={copyHref}>Skopiuj do moich notatek</a>
         </div>
       </header>

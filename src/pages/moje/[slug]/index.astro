@@ -11,6 +11,7 @@ import NoteScripts from '../../../components/NoteScripts.astro';
 import NoteSearch from '../../../components/NoteSearch.astro';
 import Toc from '../../../components/Toc.astro';
 import { formatDate, isoDate } from '../../../lib/format';
+import { noteFilename } from '../../../lib/note-export';
 import { noteUrl } from '../../../lib/notes';
 import { getNoteByUserAndSlug } from '../../../lib/server/user-notes';
 import { getPublicationForSourceNote } from '../../../lib/server/publication-notes';
@@ -52,6 +53,7 @@ const canUpdate = Boolean(publication) && !pending;
 const origin = Astro.url.origin;
 const newShareUrl = newShareToken ? `${origin}/w/${newShareToken}/` : null;
 const downloadHref = `/api/notes/download?kind=mine&slug=${encodeURIComponent(note.slug)}`;
+const pdfFilename = noteFilename(note.slug, note.title);
 ---
 
 <Base title={note.title} description={note.description ?? undefined}>
@@ -78,7 +80,7 @@ const downloadHref = `/api/notes/download?kind=mine&slug=${encodeURIComponent(no
     <nav class="account-nav">
       <a class="button button-secondary" href="/moje/">Wróć</a>
       <a class="button" href={`/moje/${note.slug}/edytuj/`}>Edytuj</a>
-      <NoteDownload mdHref={downloadHref} />
+      <NoteDownload mdHref={downloadHref} filename={pdfFilename} />
       {
         publication && (
           <a class="button button-secondary" href={noteUrl(publication.subject_slug, publication.slug)}>

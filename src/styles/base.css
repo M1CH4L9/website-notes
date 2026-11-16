@@ -1423,4 +1423,14 @@ body.is-editor-page .site-main > .container {
     color: inherit;
     box-shadow: none;
   }
+
+  /* Fallback print: treść details widoczna także gdy JS nie zdążył otworzyć. */
+  .prose details > *:not(summary) {
+    display: block !important;
+  }
+
+  .note-pdf-busy,
+  .note-pdf-fallback-tip {
+    display: none !important;
+  }
 }

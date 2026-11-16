@@ -9,6 +9,7 @@ import NoteScripts from '../../../components/NoteScripts.astro';
 import NoteSearch from '../../../components/NoteSearch.astro';
 import Toc from '../../../components/Toc.astro';
 import { formatDate, isoDate } from '../../../lib/format';
+import { noteFilename } from '../../../lib/note-export';
 import { isDatabaseConfigured } from '../../../lib/server/env';
 import { getActiveShareByToken } from '../../../lib/server/shares';
 import { renderUserMarkdown } from '../../../markdown/user.mjs';
@@ -29,6 +30,7 @@ if (!share) {
 const note = share.note;
 const { html, headings } = await renderUserMarkdown(note.body);
 const downloadHref = `/api/notes/download?kind=share&token=${encodeURIComponent(token)}`;
+const pdfFilename = noteFilename(note.slug, note.title);
 ---
 
 <Base title={note.title} description={note.description ?? undefined}>
@@ -36,7 +38,7 @@ const downloadHref = `/api/notes/download?kind=share&token=${encodeURIComponent(
     <nav class="account-nav">
       <span class="badge">{share.permission === 'edit' ? 'link do edycji' : 'link do odczytu'}</span>
       <span class="hint">udostępnione przez @{share.owner_username}</span>
-      <NoteDownload mdHref={downloadHref} />
+      <NoteDownload mdHref={downloadHref} filename={pdfFilename} />
       {
         share.permission === 'edit' && (
           <a class="button" href={`/w/${token}/edytuj/`}>

@@ -129,10 +129,17 @@
       if (root.dataset.ready === '1') return;
       root.dataset.ready = '1';
 
-      const printButton = root.querySelector<HTMLButtonElement>('[data-note-print]');
-      printButton?.addEventListener('click', () => {
+      const pdfButton = root.querySelector<HTMLButtonElement>('[data-note-pdf]');
+      pdfButton?.addEventListener('click', async () => {
         root.open = false;
-        window.print();
+        const filename = root.dataset.pdfFilename || 'notatka';
+        pdfButton.disabled = true;
+        try {
+          const { exportNotePdf } = await import('../lib/note-pdf-client');
+          await exportNotePdf(filename);
+        } finally {
+          pdfButton.disabled = false;
+        }
       });
 
       document.addEventListener('click', (event) => {

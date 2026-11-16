@@ -129,6 +129,80 @@
   color: var(--text);
 }
 
+.note-download-item:disabled {
+  opacity: 0.55;
+  cursor: wait;
+}
+
+/* Overlay podczas generowania PDF w przeglądarce */
+.note-pdf-busy {
+  position: fixed;
+  inset: auto 1rem 1rem auto;
+  z-index: 40;
+  max-width: min(22rem, calc(100vw - 2rem));
+  padding: 0.7rem 0.95rem;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-s);
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: var(--shadow-card-hover);
+  font-size: 0.9375rem;
+  font-weight: 600;
+}
+
+.note-pdf-fallback-tip {
+  position: fixed;
+  inset: auto 1rem 1rem auto;
+  z-index: 40;
+  max-width: min(26rem, calc(100vw - 2rem));
+  padding: 0.75rem 0.95rem;
+  border: 1px solid color-mix(in srgb, var(--callout-warning) 45%, var(--border));
+  border-radius: var(--radius-s);
+  background: color-mix(in srgb, var(--callout-warning) 12%, var(--surface));
+  color: var(--text);
+  box-shadow: var(--shadow-card-hover);
+  font-size: 0.9063rem;
+  line-height: 1.45;
+}
+
+.note-pdf-busy[hidden],
+.note-pdf-fallback-tip[hidden] {
+  display: none !important;
+}
+
+/* Ukryj chrome UI w klatce html2canvas */
+body.is-pdf-export .note-head-actions,
+body.is-pdf-export .note-download,
+body.is-pdf-export .note-search,
+body.is-pdf-export .toc-mobile,
+body.is-pdf-export .note-pager,
+body.is-pdf-export .code-copy,
+body.is-pdf-export .heading-anchor {
+  display: none !important;
+}
+
+body.is-pdf-export .prose details {
+  break-inside: avoid;
+}
+
+/* html2canvas źle znosi gradienty przewijania i max-content w pre */
+body.is-pdf-export .prose pre {
+  background: var(--code-bg) !important;
+  overflow: visible !important;
+  white-space: pre-wrap !important;
+  overflow-wrap: anywhere !important;
+}
+
+body.is-pdf-export .prose pre code {
+  width: auto !important;
+  min-width: 0 !important;
+  white-space: pre-wrap !important;
+}
+
+body.is-pdf-export .table-wrap {
+  overflow: visible !important;
+}
+
 /* Wyszukiwanie w notatce */
 
 .note-search {
