@@ -56,10 +56,15 @@ const PDF_SAFE_CSS = `
   }
   .prose pre {
     margin: 0; padding: 0.85rem 1rem; background: #eef2f6 !important; color: #1f2328;
-    white-space: pre-wrap; overflow-wrap: anywhere; font-size: 0.82rem; line-height: 1.6;
+    white-space: pre-wrap !important; overflow-wrap: anywhere !important; word-break: break-word !important;
+    overflow: visible !important; font-size: 0.78rem; line-height: 1.55;
     font-family: ui-monospace, monospace;
   }
-  .prose pre code { width: auto !important; min-width: 0 !important; white-space: pre-wrap; background: transparent; }
+  .prose pre code {
+    display: block !important; width: auto !important; max-width: 100% !important; min-width: 0 !important;
+    white-space: pre-wrap !important; overflow-wrap: anywhere !important; word-break: break-word !important;
+    background: transparent;
+  }
   .astro-code, .astro-code span { color: #1f2328 !important; }
   .prose details {
     padding: 0.65rem 0.9rem; border: 1px solid #d1d9e0; border-radius: 8px; background: #ffffff; margin: 0.7rem 0;
