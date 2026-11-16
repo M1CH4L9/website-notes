@@ -1,0 +1,35 @@
+---
+interface Props {
+  variant: 'mobile' | 'desktop';
+}
+
+const { variant } = Astro.props;
+const id = variant === 'desktop' ? 'note-search-desktop' : 'note-search-mobile';
+---
+
+<div class={`note-search note-search-${variant}`} data-note-search data-variant={variant}>
+  <label class="visually-hidden" for={id}>Szukaj w notatce</label>
+  <div class="note-search-row">
+    <input
+      id={id}
+      class="note-search-input"
+      type="search"
+      name="q"
+      placeholder="Szukaj w spisie i treści…"
+      autocomplete="off"
+      spellcheck="false"
+      enterkeyhint="search"
+      data-note-search-input
+    />
+    <div class="note-search-nav" data-note-search-nav hidden>
+      <span class="note-search-count" data-note-search-count></span>
+      <button class="note-search-step" type="button" data-note-search-prev aria-label="Poprzednie trafienie">
+        ↑
+      </button>
+      <button class="note-search-step" type="button" data-note-search-next aria-label="Następne trafienie">
+        ↓
+      </button>
+    </div>
+  </div>
+  <p class="note-search-empty" data-note-search-empty hidden>Brak trafień w tej notatce.</p>
+</div>

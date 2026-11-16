@@ -1,5 +1,5 @@
 ---
-/* Skrypty strony notatki: kopiowanie kodu, zamykanie spisu treści na telefonie, aktywna sekcja. */
+/* Skrypty strony notatki: kopiowanie kodu, spis, pobieranie PDF, wyszukiwanie. */
 ---
 
 <script>
@@ -8,7 +8,6 @@
       await navigator.clipboard.writeText(value);
       return true;
     } catch {
-      // Starsze przeglądarki i strony bez HTTPS.
       const area = document.createElement('textarea');
       area.value = value;
       area.setAttribute('readonly', '');
@@ -29,50 +28,67 @@
 
   const timers = new WeakMap<HTMLElement, number>();
 
-  document.addEventListener('click', async (event) => {
-    const button = (event.target as HTMLElement).closest<HTMLButtonElement>('[data-code-copy]');
-    if (!button) return;
-    const code = button.closest('.code-block')?.querySelector('pre code');
-    const label = button.querySelector('.code-copy-label');
-    if (!code || !label) return;
+  if (!(window as unknown as { __noteCodeCopyBound?: boolean }).__noteCodeCopyBound) {
+    (window as unknown as { __noteCodeCopyBound?: boolean }).__noteCodeCopyBound = true;
+    document.addEventListener('click', async (event) => {
+      const button = (event.target as HTMLElement).closest<HTMLButtonElement>('[data-code-copy]');
+      if (!button) return;
+      const code = button.closest('.code-block')?.querySelector('pre code');
+      const label = button.querySelector('.code-copy-label');
+      if (!code || !label) return;
 
-    const ok = await copyText(code.textContent ?? '');
-    button.dataset.state = ok ? 'copied' : 'failed';
-    button.setAttribute('aria-label', ok ? 'Skopiowano' : 'Nie udało się skopiować');
-    button.title = ok ? 'Skopiowano' : 'Nie udało się skopiować';
-    label.textContent = ok ? 'Skopiowano' : 'Nie udało się';
+      const ok = await copyText(code.textContent ?? '');
+      button.dataset.state = ok ? 'copied' : 'failed';
+      button.setAttribute('aria-label', ok ? 'Skopiowano' : 'Nie udało się skopiować');
+      button.title = ok ? 'Skopiowano' : 'Nie udało się skopiować';
+      label.textContent = ok ? 'Skopiowano' : 'Nie udało się';
 
-    window.clearTimeout(timers.get(button));
-    timers.set(
-      button,
-      window.setTimeout(() => {
-        delete button.dataset.state;
-        button.setAttribute('aria-label', 'Kopiuj');
-        button.title = 'Kopiuj';
-        label.textContent = 'Kopiuj';
-      }, 1800),
-    );
-  });
+      window.clearTimeout(timers.get(button));
+      timers.set(
+        button,
+        window.setTimeout(() => {
+          delete button.dataset.state;
+          button.setAttribute('aria-label', 'Kopiuj');
+          button.title = 'Kopiuj';
+          label.textContent = 'Kopiuj';
+        }, 1800),
+      );
+    });
+  }
 
-  // Po wybraniu sekcji na telefonie spis się zwija, żeby nie zasłaniał treści.
-  const mobileToc = document.querySelector<HTMLDetailsElement>('.toc-mobile');
-  mobileToc?.addEventListener('click', (event) => {
-    if (!(event.target as HTMLElement).closest('a')) return;
-    // Bez animacji zwijania: układ strony musi być gotowy, zanim przeglądarka przewinie do sekcji.
-    mobileToc.classList.add('is-jumping');
-    mobileToc.open = false;
-    window.requestAnimationFrame(() => mobileToc.classList.remove('is-jumping'));
-  });
+  function normalize(value: string): string {
+    return value
+      .normalize('NFKD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase();
+  }
 
-  // Podświetlenie bieżącej sekcji w spisie treści na komputerze.
-  const links = [...document.querySelectorAll<HTMLAnchorElement>('[data-toc-link]')];
-  const sections = links
-    .map((link) => document.getElementById(decodeURIComponent(link.hash.slice(1))))
-    .filter((heading): heading is HTMLElement => heading !== null);
+  function bindMobileToc() {
+    const mobileToc = document.querySelector<HTMLDetailsElement>('.toc-mobile');
+    if (!mobileToc || mobileToc.dataset.ready === '1') return;
+    mobileToc.dataset.ready = '1';
+    mobileToc.addEventListener('click', (event) => {
+      if (!(event.target as HTMLElement).closest('a')) return;
+      mobileToc.classList.add('is-jumping');
+      mobileToc.open = false;
+      window.requestAnimationFrame(() => mobileToc.classList.remove('is-jumping'));
+    });
+  }
 
-  if (sections.length > 0) {
+  let tocCleanup: (() => void) | null = null;
+
+  function bindDesktopToc() {
+    tocCleanup?.();
+    tocCleanup = null;
+
+    const links = [...document.querySelectorAll<HTMLAnchorElement>('[data-toc-link]')];
+    const sections = links
+      .map((link) => document.getElementById(decodeURIComponent(link.hash.slice(1))))
+      .filter((heading): heading is HTMLElement => heading !== null);
+
+    if (sections.length === 0) return;
+
     let ticking = false;
-
     const update = () => {
       ticking = false;
       const line = 96;
@@ -81,11 +97,15 @@
         if (section.getBoundingClientRect().top <= line) current = section;
         else break;
       }
-      const atBottom = window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 4;
+      const atBottom =
+        window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 4;
       if (atBottom) current = sections[sections.length - 1];
       for (const link of links) {
-        if (decodeURIComponent(link.hash.slice(1)) === current.id) link.setAttribute('aria-current', 'true');
-        else link.removeAttribute('aria-current');
+        if (decodeURIComponent(link.hash.slice(1)) === current.id) {
+          link.setAttribute('aria-current', 'true');
+        } else {
+          link.removeAttribute('aria-current');
+        }
       }
     };
 
@@ -98,5 +118,281 @@
     window.addEventListener('scroll', schedule, { passive: true });
     window.addEventListener('resize', schedule, { passive: true });
     update();
+    tocCleanup = () => {
+      window.removeEventListener('scroll', schedule);
+      window.removeEventListener('resize', schedule);
+    };
   }
+
+  function bindNoteDownload() {
+    document.querySelectorAll<HTMLDetailsElement>('[data-note-download]').forEach((root) => {
+      if (root.dataset.ready === '1') return;
+      root.dataset.ready = '1';
+
+      const pdfButton = root.querySelector<HTMLButtonElement>('[data-note-pdf]');
+      pdfButton?.addEventListener('click', async () => {
+        root.open = false;
+        const filename = root.dataset.pdfFilename || 'notatka';
+        pdfButton.disabled = true;
+        try {
+          const { exportNotePdf } = await import('../lib/note-pdf-client');
+          const mdHref = root.querySelector<HTMLAnchorElement>('a[download]')?.href;
+          if (!mdHref) throw new Error('Brak adresu pobierania notatki.');
+          await exportNotePdf(filename, mdHref);
+        } finally {
+          pdfButton.disabled = false;
+        }
+      });
+
+      document.addEventListener('click', (event) => {
+        if (!root.open) return;
+        if (root.contains(event.target as Node)) return;
+        root.open = false;
+      });
+
+      root.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape') root.open = false;
+      });
+    });
+  }
+
+  function clearSearchMarks(prose: HTMLElement) {
+    prose.querySelectorAll('mark.note-search-hit').forEach((mark) => {
+      const parent = mark.parentNode;
+      if (!parent) return;
+      parent.replaceChild(document.createTextNode(mark.textContent ?? ''), mark);
+      parent.normalize();
+    });
+  }
+
+  function markMatches(root: HTMLElement, rawQuery: string): HTMLElement[] {
+    const hits: HTMLElement[] = [];
+    const needle = rawQuery.trim();
+    if (!needle) return hits;
+
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+      acceptNode(node) {
+        const parent = node.parentElement;
+        if (!parent) return NodeFilter.FILTER_REJECT;
+        if (parent.closest('mark.note-search-hit, script, style, .code-copy, .heading-anchor')) {
+          return NodeFilter.FILTER_REJECT;
+        }
+        if (!node.textContent || !normalize(node.textContent).includes(normalize(needle))) {
+          return NodeFilter.FILTER_REJECT;
+        }
+        return NodeFilter.FILTER_ACCEPT;
+      },
+    });
+
+    const nodes: Text[] = [];
+    let current = walker.nextNode();
+    while (current) {
+      nodes.push(current as Text);
+      current = walker.nextNode();
+    }
+
+    const normNeedle = normalize(needle);
+
+    for (const textNode of nodes) {
+      const raw = textNode.textContent ?? '';
+      const parts: Array<string | HTMLElement> = [];
+      let cursor = 0;
+      let rawIndex = 0;
+
+      while (rawIndex < raw.length) {
+        let foundAt = -1;
+        let foundEnd = -1;
+        for (let start = rawIndex; start < raw.length; start += 1) {
+          let end = start;
+          let built = '';
+          while (end < raw.length && built.length < normNeedle.length) {
+            built += normalize(raw[end]);
+            end += 1;
+            if (built === normNeedle) {
+              foundAt = start;
+              foundEnd = end;
+              break;
+            }
+          }
+          if (foundAt !== -1) break;
+        }
+        if (foundAt === -1) break;
+        if (foundAt > cursor) parts.push(raw.slice(cursor, foundAt));
+        const mark = document.createElement('mark');
+        mark.className = 'note-search-hit';
+        mark.textContent = raw.slice(foundAt, foundEnd);
+        parts.push(mark);
+        hits.push(mark);
+        cursor = foundEnd;
+        rawIndex = foundEnd;
+      }
+
+      if (parts.length === 0) continue;
+      if (cursor < raw.length) parts.push(raw.slice(cursor));
+
+      const frag = document.createDocumentFragment();
+      for (const part of parts) {
+        frag.append(typeof part === 'string' ? document.createTextNode(part) : part);
+      }
+      textNode.parentNode?.replaceChild(frag, textNode);
+    }
+
+    return hits;
+  }
+
+  function sectionIdForElement(el: HTMLElement): string | null {
+    const prose = el.closest('.prose');
+    if (!prose) return null;
+    const headings = [...prose.querySelectorAll<HTMLElement>('h2[id], h3[id]')];
+    let current: string | null = null;
+    const top = el.getBoundingClientRect().top + window.scrollY;
+    for (const heading of headings) {
+      const headingTop = heading.getBoundingClientRect().top + window.scrollY;
+      if (headingTop <= top + 1) current = heading.id;
+      else break;
+    }
+    return current;
+  }
+
+  function bindNoteSearch() {
+    const roots = [...document.querySelectorAll<HTMLElement>('[data-note-search]')];
+    if (roots.length === 0) return;
+
+    const prose = document.querySelector<HTMLElement>('.note-main .prose');
+    const tocLinks = [
+      ...document.querySelectorAll<HTMLAnchorElement>('.toc-link, [data-toc-link]'),
+    ];
+    const title = document.querySelector<HTMLElement>('.note-head .page-title');
+    const lead = document.querySelector<HTMLElement>('.note-head .page-lead');
+
+    let hits: HTMLElement[] = [];
+    let active = -1;
+    let lastQuery = '';
+
+    const syncInputs = (value: string, source?: HTMLInputElement) => {
+      for (const root of roots) {
+        const input = root.querySelector<HTMLInputElement>('[data-note-search-input]');
+        if (input && input !== source) input.value = value;
+      }
+    };
+
+    const setNav = (query: string) => {
+      for (const root of roots) {
+        const nav = root.querySelector<HTMLElement>('[data-note-search-nav]');
+        const count = root.querySelector<HTMLElement>('[data-note-search-count]');
+        const empty = root.querySelector<HTMLElement>('[data-note-search-empty]');
+        if (!nav || !count || !empty) continue;
+        if (!query) {
+          nav.hidden = true;
+          empty.hidden = true;
+          continue;
+        }
+        nav.hidden = hits.length === 0;
+        empty.hidden = hits.length > 0;
+        count.textContent = hits.length > 0 ? `${active + 1}/${hits.length}` : '0';
+      }
+    };
+
+    const filterToc = (query: string, matchedIds: Set<string>) => {
+      const filtering = Boolean(query);
+      for (const link of tocLinks) {
+        const id = decodeURIComponent(link.hash.slice(1));
+        const textMatch = normalize(link.textContent ?? '').includes(query);
+        const keep = !filtering || textMatch || matchedIds.has(id);
+        const item = link.closest('li');
+        if (item) item.hidden = !keep;
+        link.classList.toggle('is-search-match', filtering && (textMatch || matchedIds.has(id)));
+      }
+    };
+
+    const reveal = (index: number) => {
+      if (hits.length === 0) return;
+      active = ((index % hits.length) + hits.length) % hits.length;
+      hits.forEach((hit, i) => hit.classList.toggle('is-active', i === active));
+      hits[active]?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      setNav(lastQuery);
+    };
+
+    const apply = (rawQuery: string, source?: HTMLInputElement) => {
+      const query = normalize(rawQuery);
+      syncInputs(rawQuery, source);
+      lastQuery = query;
+
+      if (prose) clearSearchMarks(prose);
+
+      if (!query) {
+        hits = [];
+        active = -1;
+        filterToc('', new Set());
+        setNav('');
+        return;
+      }
+
+      const matchedIds = new Set<string>();
+      for (const link of tocLinks) {
+        if (normalize(link.textContent ?? '').includes(query)) {
+          matchedIds.add(decodeURIComponent(link.hash.slice(1)));
+        }
+      }
+
+      const headMatch =
+        normalize(title?.textContent ?? '').includes(query) ||
+        normalize(lead?.textContent ?? '').includes(query);
+
+      hits = prose ? markMatches(prose, rawQuery) : [];
+      for (const hit of hits) {
+        const id = sectionIdForElement(hit);
+        if (id) matchedIds.add(id);
+      }
+
+      // Trafienie tylko w tytule/opisie: zostaw cały spis widoczny.
+      if (headMatch && matchedIds.size === 0) {
+        for (const link of tocLinks) {
+          matchedIds.add(decodeURIComponent(link.hash.slice(1)));
+        }
+      }
+      filterToc(query, matchedIds);
+
+      active = hits.length > 0 ? 0 : -1;
+      if (active >= 0) {
+        hits.forEach((hit, i) => hit.classList.toggle('is-active', i === active));
+      }
+      setNav(query);
+    };
+
+    for (const root of roots) {
+      if (root.dataset.ready === '1') continue;
+      root.dataset.ready = '1';
+      const input = root.querySelector<HTMLInputElement>('[data-note-search-input]');
+      const prev = root.querySelector<HTMLButtonElement>('[data-note-search-prev]');
+      const next = root.querySelector<HTMLButtonElement>('[data-note-search-next]');
+      if (!input) continue;
+
+      input.addEventListener('input', () => apply(input.value, input));
+      input.addEventListener('keydown', (event) => {
+        if (event.key === 'Enter') {
+          event.preventDefault();
+          if (event.shiftKey) reveal(active - 1);
+          else reveal(active + 1);
+        }
+        if (event.key === 'Escape') {
+          input.value = '';
+          apply('', input);
+          input.blur();
+        }
+      });
+      prev?.addEventListener('click', () => reveal(active - 1));
+      next?.addEventListener('click', () => reveal(active + 1));
+    }
+  }
+
+  const bootNoteUi = () => {
+    bindMobileToc();
+    bindDesktopToc();
+    bindNoteDownload();
+    bindNoteSearch();
+  };
+
+  bootNoteUi();
+  document.addEventListener('astro:page-load', bootNoteUi);
 </script>

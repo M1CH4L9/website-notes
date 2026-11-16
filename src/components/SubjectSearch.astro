@@ -1,0 +1,68 @@
+---
+/* Live filtr przedmiotów na stronie głównej. */
+---
+
+<div class="subject-search" data-subject-search>
+  <label class="visually-hidden" for="subject-search-input">Szukaj przedmiotu</label>
+  <input
+    id="subject-search-input"
+    class="subject-search-input"
+    type="search"
+    name="q"
+    placeholder="Szukaj przedmiotu…"
+    autocomplete="off"
+    spellcheck="false"
+    enterkeyhint="search"
+    data-subject-search-input
+  />
+  <p class="subject-search-empty" data-subject-search-empty hidden>
+    Żaden przedmiot nie pasuje do tego zapytania.
+  </p>
+</div>
+
+<script>
+  function normalize(value: string): string {
+    return value
+      .normalize('NFKD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase()
+      .trim();
+  }
+
+  function bindSubjectSearch() {
+    const root = document.querySelector<HTMLElement>('[data-subject-search]');
+    const input = root?.querySelector<HTMLInputElement>('[data-subject-search-input]');
+    const empty = root?.querySelector<HTMLElement>('[data-subject-search-empty]');
+    const grid = document.querySelector<HTMLElement>('.subject-grid');
+    if (!root || !input || !empty || !grid) return;
+    if (root.dataset.ready === '1') return;
+    root.dataset.ready = '1';
+
+    const items = [...grid.querySelectorAll<HTMLElement>('.subject-item')];
+
+    const apply = () => {
+      const query = normalize(input.value);
+      let visible = 0;
+      for (const item of items) {
+        const hay = normalize(
+          [
+            item.dataset.subjectTitle ?? '',
+            item.dataset.subjectFull ?? '',
+            item.dataset.subjectSlug ?? '',
+          ].join(' '),
+        );
+        const match = !query || hay.includes(query);
+        item.hidden = !match;
+        if (match) visible += 1;
+      }
+      empty.hidden = visible > 0;
+      grid.hidden = visible === 0;
+    };
+
+    input.addEventListener('input', apply);
+    apply();
+  }
+
+  bindSubjectSearch();
+  document.addEventListener('astro:page-load', bindSubjectSearch);
+</script>

@@ -2,6 +2,7 @@
 import Arrow from '../components/Arrow.astro';
 import CatPeek from '../components/CatPeek.astro';
 import CatSitting from '../components/CatSitting.astro';
+import SubjectSearch from '../components/SubjectSearch.astro';
 import Base from '../layouts/Base.astro';
 import { countNotes } from '../lib/format';
 import { getSubjects } from '../lib/notes';
@@ -18,9 +19,15 @@ const subjects = await getSubjects();
   {
     subjects.length > 0 ? (
       <div class="has-cat">
+        <SubjectSearch />
         <ul class="subject-grid">
           {subjects.map((subject, index) => (
-            <li class="subject-item">
+            <li
+              class="subject-item"
+              data-subject-title={subject.title}
+              data-subject-fullname={subject.fullName || ''}
+              data-subject-slug={subject.slug}
+            >
               {index === 0 && <CatPeek class="card-cat" />}
               <a class="subject-card" href={subject.url}>
                 <span class="subject-code">{subject.title}</span>

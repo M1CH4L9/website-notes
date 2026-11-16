@@ -1,0 +1,22 @@
+---
+interface Props {
+  /** Adres GET /api/notes/download?... */
+  mdHref: string;
+  /** Nazwa pliku PDF/MD bez rozszerzenia */
+  filename: string;
+}
+
+const { mdHref, filename } = Astro.props;
+---
+
+<details class="note-download" data-note-download data-pdf-filename={filename}>
+  <summary class="button button-secondary note-download-summary">Pobierz</summary>
+  <div class="note-download-menu" role="menu">
+    <a class="note-download-item" role="menuitem" href={mdHref} download={`${filename}.md`}>
+      Markdown (.md)
+    </a>
+    <button class="note-download-item" type="button" role="menuitem" data-note-pdf>
+      PDF
+    </button>
+  </div>
+</details>

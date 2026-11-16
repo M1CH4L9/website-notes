@@ -4,9 +4,12 @@ import '@fontsource-variable/jetbrains-mono/wght.css';
 import '../../../styles/prose.css';
 
 import Base from '../../../layouts/Base.astro';
+import NoteDownload from '../../../components/NoteDownload.astro';
 import NoteScripts from '../../../components/NoteScripts.astro';
+import NoteSearch from '../../../components/NoteSearch.astro';
 import Toc from '../../../components/Toc.astro';
 import { formatDate, isoDate } from '../../../lib/format';
+import { noteFilename } from '../../../lib/note-export';
 import { isDatabaseConfigured } from '../../../lib/server/env';
 import { getActiveShareByToken } from '../../../lib/server/shares';
 import { renderUserMarkdown } from '../../../markdown/user.mjs';
@@ -26,6 +29,8 @@ if (!share) {
 
 const note = share.note;
 const { html, headings } = await renderUserMarkdown(note.body);
+const downloadHref = `/api/notes/download?kind=share&token=${encodeURIComponent(token)}`;
+const pdfFilename = noteFilename(note.slug, note.title);
 ---
 
 <Base title={note.title} description={note.description ?? undefined}>
@@ -33,6 +38,7 @@ const { html, headings } = await renderUserMarkdown(note.body);
     <nav class="account-nav">
       <span class="badge">{share.permission === 'edit' ? 'link do edycji' : 'link do odczytu'}</span>
       <span class="hint">udostępnione przez @{share.owner_username}</span>
+      <NoteDownload mdHref={downloadHref} filename={pdfFilename} />
       {
         share.permission === 'edit' && (
           <a class="button" href={`/w/${token}/edytuj/`}>
@@ -53,10 +59,12 @@ const { html, headings } = await renderUserMarkdown(note.body);
         </p>
       </header>
 
+      <NoteSearch variant="mobile" />
       <Toc headings={headings} variant="mobile" />
       <div class="prose" set:html={html} />
     </article>
     <aside class="note-aside">
+      <NoteSearch variant="desktop" />
       <Toc headings={headings} variant="desktop" />
     </aside>
   </div>

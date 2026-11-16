@@ -6,9 +6,12 @@ import '../../../styles/prose.css';
 import Base from '../../../layouts/Base.astro';
 import CsrfField from '../../../components/account/CsrfField.astro';
 import CustomSelect from '../../../components/account/CustomSelect.astro';
+import NoteDownload from '../../../components/NoteDownload.astro';
 import NoteScripts from '../../../components/NoteScripts.astro';
+import NoteSearch from '../../../components/NoteSearch.astro';
 import Toc from '../../../components/Toc.astro';
 import { formatDate, isoDate } from '../../../lib/format';
+import { noteFilename } from '../../../lib/note-export';
 import { noteUrl } from '../../../lib/notes';
 import { getNoteByUserAndSlug } from '../../../lib/server/user-notes';
 import { getPublicationForSourceNote } from '../../../lib/server/publication-notes';
@@ -49,6 +52,8 @@ const canPublish = !publication && !pending;
 const canUpdate = Boolean(publication) && !pending;
 const origin = Astro.url.origin;
 const newShareUrl = newShareToken ? `${origin}/w/${newShareToken}/` : null;
+const downloadHref = `/api/notes/download?kind=mine&slug=${encodeURIComponent(note.slug)}`;
+const pdfFilename = noteFilename(note.slug, note.title);
 ---
 
 <Base title={note.title} description={note.description ?? undefined}>
@@ -75,6 +80,7 @@ const newShareUrl = newShareToken ? `${origin}/w/${newShareToken}/` : null;
     <nav class="account-nav">
       <a class="button button-secondary" href="/moje/">Wróć</a>
       <a class="button" href={`/moje/${note.slug}/edytuj/`}>Edytuj</a>
+      <NoteDownload mdHref={downloadHref} filename={pdfFilename} />
       {
         publication && (
           <a class="button button-secondary" href={noteUrl(publication.subject_slug, publication.slug)}>
@@ -125,10 +131,12 @@ const newShareUrl = newShareToken ? `${origin}/w/${newShareToken}/` : null;
         }
       </header>
 
+      <NoteSearch variant="mobile" />
       <Toc headings={headings} variant="mobile" />
       <div class="prose" set:html={html} />
     </article>
     <aside class="note-aside">
+      <NoteSearch variant="desktop" />
       <Toc headings={headings} variant="desktop" />
     </aside>
   </div>

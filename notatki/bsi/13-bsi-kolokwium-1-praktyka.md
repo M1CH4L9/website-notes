@@ -1,5 +1,5 @@
 ---
-title: "Kolokwium 1 — praktyka i komendy"
+title: "Kolokwium 1 - praktyka i komendy"
 description: "Linux, Nmap, Burp, enumeracja, pobieranie plików, powłoki i eskalacja uprawnień. Komendy, odczyt wyników i skrót na A4."
 order: 13
 updated: 2026-11-16
@@ -9,10 +9,10 @@ updated: 2026-11-16
 
 - **7 zadań**, podobnych do prac domowych, czasem rozszerzonych. **Minimum 25 do zaliczenia.**
 - Prawdopodobnie oddajesz **wartość flagi**, zamiast uruchamiać autosolver.
-- Najwięcej punktów i samodzielnej pracy: **zadanie 7 — SUID, sudo, linPEAS**. W raporcie najważniejsze są **Interesting Permissions** i **Users Information**.
+- Najwięcej punktów i samodzielnej pracy: **zadanie 7 - SUID, sudo, linPEAS**. W raporcie najważniejsze są **Interesting Permissions** i **Users Information**.
 - Z zadania 5 przećwicz pobieranie plików; socat nie będzie potrzebny. W zadaniu 6 rozróżniaj swoją rolę w reverse i bind shellu. Złożony wariant 7.11 mało prawdopodobny.
 
-**Materiały i organizacja:** blok 1 na stronie oraz własna, odręczna kartka maks. A4. Kartkę można wcześniej wysłać prowadzącej do sprawdzenia. PDF-y przygotuj na **Z:** — Teams będzie zamknięty. Własny laptop: maksymalna jasność i brak pomocy technicznej. Jeśli nie wiesz, czy błąd jest techniczny, zapytaj.
+**Materiały i organizacja:** blok 1 na stronie oraz własna, odręczna kartka maks. A4. Kartkę można wcześniej wysłać prowadzącej do sprawdzenia. PDF-y przygotuj na **Z:** - Teams będzie zamknięty. Własny laptop: maksymalna jasność i brak pomocy technicznej. Jeśli nie wiesz, czy błąd jest techniczny, zapytaj.
 
 ## Schemat rozwiązania zadania
 
@@ -313,16 +313,16 @@ Kolejność pól to `nazwa:haslo:UID:GID:opis:dom:powloka`. `x` zwykle oznacza o
 
 ### Przykłady sudo i kont z prac domowych
 
-**Interpreter dopuszczony przez sudo — zadanie 7.8:**
+**Interpreter dopuszczony przez sudo - zadanie 7.8:**
 
 ```bash
 sudo -l
 sudo /usr/bin/perl -e 'system("/root/solve");'
 ```
 
-`/root/solve` to program z pracy domowej. Na kolokwium wykonaj czynność wskazaną w poleceniu — np. odczytaj plik z flagą. Reguła musi dopuszczać konkretny interpreter i użyte argumenty.
+`/root/solve` to program z pracy domowej. Na kolokwium wykonaj czynność wskazaną w poleceniu - np. odczytaj plik z flagą. Reguła musi dopuszczać konkretny interpreter i użyte argumenty.
 
-**Edytor dopuszczony przez sudo — zadanie 7.9:**
+**Edytor dopuszczony przez sudo - zadanie 7.9:**
 
 ```bash
 sudo -l
@@ -337,7 +337,7 @@ Wewnątrz edytora wpisz:
 
 W uzyskanej powłoce sprawdź `id`. Polecenie `:!bash` wpisujesz w vi, nie w zwykłym terminalu. Możliwość uruchamiania komend może być ograniczona przez regułę sudo.
 
-**Inne konto z UID 0 — zadanie 7.10:**
+**Inne konto z UID 0 - zadanie 7.10:**
 
 ```bash
 cat /etc/passwd
@@ -493,6 +493,6 @@ output, listen, ports, recursive, wordlist, perm, iname
 
 ## Więcej przykładów
 
-- [Rozwiązania prac domowych](/przedmioty/bsi/bsi-rozwiazania/) — konkretne zadania i sekwencje komend.
-- [Spis komend](/przedmioty/bsi/bsi-spis-komend/) — opcje narzędzi.
-- [Pełna powtórka do kolokwium 1](/przedmioty/bsi/bsi-kolokwium-1/) — szersze wyjaśnienia materiału 1–7.
+- [Rozwiązania prac domowych](/przedmioty/bsi/bsi-rozwiazania/) - konkretne zadania i sekwencje komend.
+- [Spis komend](/przedmioty/bsi/bsi-spis-komend/) - opcje narzędzi.
+- [Pełna powtórka do kolokwium 1](/przedmioty/bsi/bsi-kolokwium-1/) - szersze wyjaśnienia materiału 1-7.

@@ -6,10 +6,13 @@ import '../../../styles/prose.css';
 import { render } from 'astro:content';
 import Breadcrumbs from '../../../components/Breadcrumbs.astro';
 import CatPeek from '../../../components/CatPeek.astro';
+import NoteDownload from '../../../components/NoteDownload.astro';
 import NoteScripts from '../../../components/NoteScripts.astro';
+import NoteSearch from '../../../components/NoteSearch.astro';
 import Toc from '../../../components/Toc.astro';
 import Base from '../../../layouts/Base.astro';
 import { formatDate, isoDate } from '../../../lib/format';
+import { noteFilename } from '../../../lib/note-export';
 import { getSubjects } from '../../../lib/notes';
 import { renderUserMarkdown } from '../../../markdown/user.mjs';
 
@@ -40,6 +43,15 @@ if (note.entry) {
   html = rendered.html;
   headings = rendered.headings;
 }
+
+const downloadHref = note.publication
+  ? `/api/notes/download?kind=publication&id=${encodeURIComponent(note.publication.id)}`
+  : `/api/notes/download?kind=public&subject=${encodeURIComponent(subject.slug)}&note=${encodeURIComponent(note.slug)}`;
+const pdfFilename = noteFilename(note.slug, note.title);
+
+const copyHref = note.publication
+  ? `/moje/z-publicznej?subject=${subject.slug}&note=${note.slug}&pub=${note.publication.id}`
+  : `/moje/z-publicznej?subject=${subject.slug}&note=${note.slug}`;
 ---
 
 <Base title={`${note.title} · ${subject.title}`} description={note.description}>
@@ -63,29 +75,13 @@ if (note.entry) {
             </p>
           )
         }
-        {
-          note.entry && (
-            <p class="page-meta note-copy-action">
-              <a class="button" href={`/moje/z-publicznej?subject=${subject.slug}&note=${note.slug}`}>
-                Skopiuj do moich notatek
-              </a>
-            </p>
-          )
-        }
-        {
-          note.publication && (
-            <p class="page-meta note-copy-action">
-              <a
-                class="button"
-                href={`/moje/z-publicznej?subject=${subject.slug}&note=${note.slug}&pub=${note.publication.id}`}
-              >
-                Skopiuj do moich notatek
-              </a>
-            </p>
-          )
-        }
+        <div class="note-head-actions">
+          <NoteDownload mdHref={downloadHref} filename={pdfFilename} />
+          <a class="button" href={copyHref}>Skopiuj do moich notatek</a>
+        </div>
       </header>
 
+      <NoteSearch variant="mobile" />
       <Toc headings={headings} variant="mobile" />
 
       {
@@ -120,6 +116,7 @@ if (note.entry) {
     </article>
 
     <aside class="note-aside">
+      <NoteSearch variant="desktop" />
       <Toc headings={headings} variant="desktop" />
     </aside>
   </div>
