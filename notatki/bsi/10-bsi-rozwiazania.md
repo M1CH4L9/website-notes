@@ -3,6 +3,7 @@ title: Rozwiązania - ćwiczenia 1-7
 description: "101 rozwiązań BSI: polecenia, kroki w Burp Suite oraz warianty podstawowe i PENTEST z repozytorium."
 updated: 2026-11-15
 order: 10
+archive: true
 ---
 
 ## Jak korzystać z rozwiązań

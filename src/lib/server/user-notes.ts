@@ -11,6 +11,7 @@ export type UserNote = {
   is_public: boolean;
   source_public_path: string | null;
   revision?: number;
+  folder_id?: string | null;
   created_at: Date;
   updated_at: Date;
 };
@@ -75,6 +76,7 @@ export async function createNote(input: {
   body?: string;
   slug?: string;
   sourcePublicPath?: string;
+  folderId?: string;
 }): Promise<UserNote> {
   const title = input.title.trim();
   if (!title) throw new Error('Tytuł jest wymagany.');
@@ -86,10 +88,10 @@ export async function createNote(input: {
 
   const slug = await uniqueSlugForUser(input.userId, title, input.slug);
   const { rows } = await query<UserNote>(
-    `INSERT INTO user_notes (user_id, slug, title, description, body, source_public_path)
-     VALUES ($1, $2, $3, $4, $5, $6)
+    `INSERT INTO user_notes (user_id, slug, title, description, body, source_public_path, folder_id)
+     VALUES ($1, $2, $3, $4, $5, $6, $7)
      RETURNING *`,
-    [input.userId, slug, title, description, body, input.sourcePublicPath ?? null],
+    [input.userId, slug, title, description, body, input.sourcePublicPath ?? null, input.folderId ?? null],
   );
   return rows[0];
 }

@@ -6,6 +6,7 @@ import {
   redirect,
   requireUser,
 } from '../../../lib/server/http';
+import { listNoteFolders, validFolderId } from '../../../lib/server/note-folders';
 import { createNote } from '../../../lib/server/user-notes';
 
 export const prerender = false;
@@ -23,9 +24,14 @@ export const POST: APIRoute = async (context) => {
     return redirect('/moje/nowa/?error=' + encodeURIComponent(unsafe));
   }
 
+  const folderId = readFormString(form, 'folder');
+  if (folderId && (!validFolderId(folderId) || !(await listNoteFolders(auth.user.id)).some(folder => folder.id === folderId))) {
+    return redirect('/moje/nowa/?error=' + encodeURIComponent('Nie znaleziono folderu.'));
+  }
   try {
     const note = await createNote({
       userId: auth.user.id,
+      folderId: folderId || undefined,
       title: readFormString(form, 'title'),
       description: readFormString(form, 'description'),
       body: readFormString(form, 'body'),

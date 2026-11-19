@@ -1,0 +1,29 @@
+---
+import Base from '../../layouts/Base.astro';
+import { emailConfigured } from '../../lib/server/account-email';
+import { githubConfigured } from '../../lib/server/github';
+
+interface Props { registration?: boolean }
+const { registration = false } = Astro.props;
+const ready = Astro.locals.dbReady && emailConfigured();
+const title = registration ? 'Utwórz konto' : 'Odzyskaj hasło';
+const next = Astro.url.searchParams.get('next') || '/moje/';
+---
+<Base title={title}>
+  <div class="auth-panel">
+    <h1 class="page-title">{title}</h1>
+    {Astro.url.searchParams.has('ok') && <p class="form-ok" role="status">{Astro.url.searchParams.get('ok')}</p>}
+    {Astro.url.searchParams.has('error') && <p class="form-error" role="alert">{Astro.url.searchParams.get('error')}</p>}
+    {ready ? (
+      <form class="auth-form" method="post" action={registration ? '/api/auth/register' : '/api/auth/reset-request'}>
+        <div class="field">
+          <label for="email">Adres e-mail</label>
+          <input id="email" name="email" type="email" autocomplete="email" required maxlength="254" />
+        </div>
+        <div class="form-actions"><button class="button">{registration ? 'Wyślij link rejestracyjny' : 'Wyślij link do zmiany hasła'}</button></div>
+      </form>
+    ) : <p class="form-error">Wysyłka e-maili jest chwilowo niedostępna.</p>}
+    {registration && githubConfigured() && <p><a class="button button-github" href={`/auth/github?next=${encodeURIComponent(next)}`}>Kontynuuj z GitHubem</a></p>}
+    <p class="auth-footer-links"><a href="/logowanie/">Wróć do logowania</a></p>
+  </div>
+</Base>

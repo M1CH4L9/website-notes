@@ -8,6 +8,7 @@ if (Astro.locals.user) {
   return Astro.redirect('/moje/');
 }
 
+const ok = Astro.url.searchParams.get('ok');
 const error = Astro.url.searchParams.get('error');
 const next = Astro.url.searchParams.get('next') || '/moje/';
 const dbReady = isDatabaseConfigured();
@@ -17,7 +18,7 @@ const githubOk = githubConfigured();
 <Base title="Logowanie" description="Zaloguj się do swoich notatek.">
   <div class="auth-panel">
     <h1 class="page-title">Logowanie</h1>
-    <p class="page-lead">Hasło albo konto GitHub.</p>
+    <p class="page-lead">Użyj hasła lub zaloguj się przez GitHub.</p>
 
     {
       !dbReady && (
@@ -27,6 +28,7 @@ const githubOk = githubConfigured();
       )
     }
 
+    {ok && <p class="form-ok" role="status">{ok}</p>}
     {error && <p class="form-error">{error}</p>}
 
     <form class="auth-form" method="post" action="/api/auth/login" data-auth-prefs>
@@ -41,8 +43,8 @@ const githubOk = githubConfigured();
         </label>
       </div>
       <div class="field">
-        <label for="username">Nazwa użytkownika</label>
-        <input id="username" name="username" autocomplete="username" required maxlength="32" />
+        <label for="username">E-mail lub nazwa użytkownika</label>
+        <input id="username" name="username" autocomplete="username" required maxlength="254" />
       </div>
       <div class="field">
         <label for="password">Hasło</label>
@@ -73,6 +75,7 @@ const githubOk = githubConfigured();
       )
     }
 
+    <p class="auth-footer-links"><a href="/haslo/">Nie pamiętasz hasła?</a></p>
     <p class="auth-footer-links">
       Nie masz konta? <a href={`/rejestracja?next=${encodeURIComponent(next)}`}>Zarejestruj się</a>
     </p>

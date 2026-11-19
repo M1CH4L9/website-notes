@@ -18,12 +18,24 @@ export interface Subject {
   description?: string;
   url: string;
   notes: Note[];
+  folders: SubjectFolder[];
   source: 'file' | 'db' | 'mixed';
+}
+
+export interface SubjectFolder {
+  path: string;
+  title: string;
+  description?: string;
+  url: string;
+  parent: string;
+  order?: number;
 }
 
 export interface Note {
   slug: string;
   subjectSlug: string;
+  folder?: string;
+  archive?: boolean;
   title: string;
   description?: string;
   updated?: Date;
@@ -38,14 +50,20 @@ export interface Note {
 const collator = new Intl.Collator('pl', { numeric: true, sensitivity: 'base' });
 
 export const subjectUrl = (subject: string) => `/przedmioty/${subject}/`;
+export const folderUrl = (subject: string, folder: string) => `/przedmioty/${subject}/foldery/${folder}/`;
 export const noteUrl = (subject: string, note: string) => `/przedmioty/${subject}/${note}/`;
 
 function toFileNote(entry: NoteEntry): Note {
   const [subjectSlug, slug] = entry.id.split('/');
+  const parts = entry.filePath?.split('/') ?? [];
+  const catalog = parts.indexOf('notatki');
+  const folder = catalog < 0 ? '' : parts.slice(catalog + 2, -1).join('/');
   return {
     slug,
     subjectSlug,
     title: entry.data.title,
+    folder,
+    archive: entry.data.archive,
     description: entry.data.description,
     updated: entry.data.updated,
     url: noteUrl(subjectSlug, slug),
@@ -84,9 +102,10 @@ function compareNotes(a: Note, b: Note): number {
 }
 
 export async function getSubjects(): Promise<Subject[]> {
-  const [subjectEntries, noteEntries] = await Promise.all([
+  const [subjectEntries, noteEntries, folderEntries] = await Promise.all([
     getCollection('subjects'),
     getCollection('notes', ({ data }) => import.meta.env.DEV || !data.draft),
+    getCollection('folders'),
   ]);
 
   const bySlug = new Map<string, Subject>();
@@ -106,6 +125,10 @@ export async function getSubjects(): Promise<Subject[]> {
         .filter((note) => note.id.startsWith(`${subject.id}/`))
         .sort(compareFileNotes)
         .map(toFileNote),
+      folders: folderEntries.filter(folder => folder.id.startsWith(`${subject.id}/`)).map(folder => {
+        const path = folder.id.slice(subject.id.length + 1);
+        return { ...folder.data, path, parent: path.split('/').slice(0, -1).join('/'), url: folderUrl(subject.id, path) };
+      }).sort((a, b) => (a.order ?? 0) - (b.order ?? 0) || collator.compare(a.title, b.title)),
       source: 'file',
     });
   }
@@ -133,6 +156,7 @@ export async function getSubjects(): Promise<Subject[]> {
             description: subject.description ?? undefined,
             url: subjectUrl(subject.slug),
             notes: [],
+            folders: [],
             source: 'db',
           });
         }
@@ -146,6 +170,7 @@ export async function getSubjects(): Promise<Subject[]> {
             title: pub.subject_slug,
             url: subjectUrl(pub.subject_slug),
             notes: [],
+            folders: [],
             source: 'db',
           };
           bySlug.set(pub.subject_slug, subject);
@@ -174,4 +199,12 @@ export async function getSubjects(): Promise<Subject[]> {
   }
 
   return [...bySlug.values()].sort((a, b) => collator.compare(a.title, b.title));
+}
+
+export function folderBreadcrumbs(subject: Subject, path: string) {
+  const segments = path.split('/').filter(Boolean);
+  return segments.flatMap((_, index) => {
+    const folder = subject.folders.find(item => item.path === segments.slice(0, index + 1).join('/'));
+    return folder ? [{ label: folder.title, href: folder.url }] : [];
+  });
 }

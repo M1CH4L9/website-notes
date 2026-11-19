@@ -33,7 +33,7 @@ const subjects = await getSubjects();
                 <span class="subject-code">{subject.title}</span>
                 {subject.fullName && <span class="subject-name">{subject.fullName}</span>}
                 <span class="subject-foot">
-                  <span>{countNotes(subject.notes.length)}</span>
+                  <span>{countNotes(subject.notes.filter(note => !note.archive).length)}</span>
                   <Arrow class="subject-arrow" />
                 </span>
               </a>

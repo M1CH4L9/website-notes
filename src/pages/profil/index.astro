@@ -2,6 +2,7 @@
 import Base from '../../layouts/Base.astro';
 import AccountNav from '../../components/AccountNav.astro';
 import CsrfField from '../../components/account/CsrfField.astro';
+import { emailConfigured } from '../../lib/server/account-email';
 import { githubConfigured } from '../../lib/server/github';
 import { MIN_PASSWORD_LENGTH } from '../../lib/server/password';
 import { formatDate, isoDate } from '../../lib/format';
@@ -72,6 +73,17 @@ const hasPassword = Boolean(user.password_hash);
         </p>
       )
     }
+  </section>
+
+  <section class="profile-section">
+    <h2 class="profile-section-title">Adres e-mail</h2>
+    {user.email ? <p>{user.email} <span class="badge">potwierdzony</span></p> : <p>Dodaj adres, aby logować się e-mailem i odzyskać hasło w razie potrzeby.</p>}
+    {emailConfigured() && <form class="auth-form" method="post" action="/api/auth/email">
+      <CsrfField />
+      <div class="field"><label for="account-email">{user.email ? 'Nowy adres e-mail' : 'Twój adres e-mail'}</label><input id="account-email" name="email" type="email" autocomplete="email" required maxlength="254" /></div>
+      {hasPassword && <div class="field"><label for="email-password">Obecne hasło</label><input id="email-password" name="current_password" type="password" autocomplete="current-password" required maxlength="200" /></div>}
+      <div class="form-actions"><button class="button button-secondary">Wyślij link potwierdzający</button></div>
+    </form>}
   </section>
 
   <section class="profile-section">

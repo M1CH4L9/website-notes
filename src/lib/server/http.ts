@@ -16,6 +16,20 @@ export function redirect(location: string, status = 303): Response {
   });
 }
 
+export function safeNext(value: string): string {
+  if (!value.startsWith('/') || value.startsWith('//') || /[\\\x00-\x20]/.test(value)) return '/moje/';
+  return value;
+}
+
+export function formMessage(path: string, kind: 'ok' | 'error', message: string) {
+  const url = new URL(path, 'https://local.invalid');
+  url.searchParams.set(kind, message);
+  const response = redirect(url.pathname + url.search);
+  response.headers.set('Cache-Control', 'no-store');
+  response.headers.set('Referrer-Policy', 'no-referrer');
+  return response;
+}
+
 export function readFormString(form: FormData, key: string): string {
   const value = form.get(key);
   return typeof value === 'string' ? value : '';

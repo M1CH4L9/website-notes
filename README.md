@@ -27,9 +27,9 @@ npm run check
 
 | Ścieżka | Opis |
 | --- | --- |
-| `/logowanie`, `/rejestracja` | hasło albo GitHub OAuth (rejestracja: powtórzenie hasła) |
-| `/moje/` | lista własnych notatek |
-| `/profil/` | konto: dane, hasło, GitHub, motywy |
+| `/logowanie`, `/rejestracja`, `/haslo/` | logowanie e-mailem lub nazwą, GitHub OAuth, rejestracja z potwierdzeniem adresu i reset hasła |
+| `/moje/` | prywatne notatki i foldery, sortowanie według tytułu lub aktualizacji |
+| `/profil/` | konto, potwierdzanie adresu e-mail, hasło, GitHub, motywy |
 | `/moje/nowa/`, `/moje/<slug>/`, `/moje/<slug>/edytuj/` | CRUD + live preview |
 | `/moje/z-publicznej?subject=&note=` | kopia publicznej notatki |
 | `/przedmioty/<przedmiot>/<slug>/` | publiczne notatki z plików **oraz** zaakceptowane publikacje użytkowników |
@@ -64,7 +64,16 @@ Admin: konto połączone z GitHubem `M1CH4L9` (albo `ADMIN_GITHUB_LOGIN`).
    Wejdź na `/logowanie` → **Kontynuuj z GitHubem** i zaloguj się jako **M1CH4L9**.  
    Konto dostanie `is_admin`. Potem `/admin/prosby/`.
 
-Bez Neonu strona publiczna działa, ale konta zwracają komunikat o braku bazy. Bez OAuth działa tylko rejestracja hasłem (bez admina z GitHuba).
+Bez Neonu strona publiczna działa, ale konta zwracają komunikat o braku bazy. Logowanie GitHub wymaga OAuth. Rejestracja i odzyskiwanie hasła przez e-mail wymagają konfiguracji poczty.
+
+## Poczta kont na Vercelu
+
+1. Zweryfikuj domenę nadawcy w [Resend](https://resend.com/domains) i utwórz klucz z uprawnieniem do wysyłki.
+2. W środowisku **Production** projektu Vercel ustaw `RESEND_API_KEY` jako Sensitive i `AUTH_EMAIL_FROM` jako pełny adres z tej domeny, np. `Notatnik <konto@twoja-domena.pl>`.
+3. Jeśli używasz własnego adresu strony, ustaw `PUBLIC_SITE_URL=https://adres-strony`. W przeciwnym razie linki użyją produkcyjnego adresu Vercel. Lokalnie ustaw `PUBLIC_SITE_URL=http://localhost:4321`.
+4. Wdróż wersję z migracjami `005` i `006`. Skrypt produkcyjnego buildu przeprowadzi migracje. Do testowania preview użyj osobnej bazy z tymi migracjami.
+
+Rejestracja zaczyna się od linku do skrzynki. Po jego otwarciu użytkownik wybiera nazwę i hasło. Istniejące konta mogą dodać adres w profilu. Link do potwierdzenia adresu jest ważny 60 minut, link resetu 30 minut. Po resecie trzeba zalogować się ponownie na wszystkich urządzeniach. Bez ustawień poczty dostępne pozostaje logowanie przez GitHub oraz przez hasło do istniejących kont.
 
 ## Treści publiczne (pliki)
 
@@ -72,9 +81,15 @@ Bez Neonu strona publiczna działa, ale konta zwracają komunikat o braku bazy. 
 notatki/
   bsi/
     przedmiot.yaml
-    01-formatowanie-tekstu.md
-    ...
+    11-bsi-spis-komend.md
+    rozwiazania/
+      folder.yaml
+      cw01/
+        folder.yaml
+        01-zadanie-1-1.md
 ```
+
+Każdy widoczny folder ma `folder.yaml` z `title` i opcjonalnymi `description` oraz `order`. Foldery można zagnieżdżać. Adres notatki zależy od nazwy pliku (po pominięciu liczbowego prefiksu), więc nazwy muszą być unikalne w całym przedmiocie. Przeniesienie pliku do folderu zachowuje adres. `archive: true` ukrywa notatkę z list, zachowując dostęp przez jej adres. Pełna wersja „Rozwiązań” BSI jest archiwum ze starymi kotwicami. Bieżące zadania edytuj w odpowiednim folderze ćwiczenia.
 
 Szczegóły składni Markdowna (kod, tabele, wzory, callouty) jak wcześniej - te same elementy działają w notatkach użytkowników.
 

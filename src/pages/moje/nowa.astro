@@ -4,12 +4,14 @@ import '@fontsource-variable/jetbrains-mono/wght.css';
 import '../../styles/prose.css';
 
 import Base from '../../layouts/Base.astro';
+import { listNoteFolders } from '../../lib/server/note-folders';
 import NoteEditor from '../../components/account/NoteEditor.astro';
 
 if (!Astro.locals.user) {
   return Astro.redirect('/logowanie?next=' + encodeURIComponent('/moje/nowa/'));
 }
 
+const folder = (await listNoteFolders(Astro.locals.user.id)).find(item => item.id === Astro.url.searchParams.get('folder'));
 const error = Astro.url.searchParams.get('error');
 ---
 
@@ -19,7 +21,8 @@ const error = Astro.url.searchParams.get('error');
   <NoteEditor
     action="/api/notes/create"
     submitLabel="Utwórz"
-    cancelHref="/moje/"
+    cancelHref={folder ? `/moje/?folder=${folder.id}` : "/moje/"}
+    folder={folder}
     showSlug={true}
   />
 </Base>

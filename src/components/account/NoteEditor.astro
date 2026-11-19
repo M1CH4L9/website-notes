@@ -9,6 +9,7 @@ interface Props {
   description?: string;
   slug?: string;
   showSlug?: boolean;
+  folder?: { id: string; name: string };
   body?: string;
   initialPreviewHtml?: string;
   toast?: string | null;
@@ -22,6 +23,7 @@ const {
   description = '',
   slug = '',
   showSlug = false,
+  folder,
   body = '',
   initialPreviewHtml = '',
   toast = null,
@@ -38,10 +40,12 @@ const {
 
 <form class="note-editor" method="post" action={action} data-note-editor data-mobile-pane="source">
   <CsrfField />
+  {folder && <input type="hidden" name="folder" value={folder.id} />}
   {slug && !showSlug && <input type="hidden" name="slug" value={slug} />}
 
   <div class="note-editor-bar">
     <div class="note-editor-meta">
+      {folder && <p class="hint">Folder: {folder.name}</p>}
       <div class="field field-compact">
         <label for="title">Tytuł</label>
         <input id="title" name="title" required maxlength="200" value={title} />

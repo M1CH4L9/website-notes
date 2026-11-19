@@ -1,7 +1,7 @@
 import type { APIRoute } from 'astro';
 import { beginGithubOAuth, githubConfigured, githubStateCookie } from '../../../lib/server/github';
 import { isProd } from '../../../lib/server/env';
-import { redirect } from '../../../lib/server/http';
+import { redirect, safeNext } from '../../../lib/server/http';
 
 export const prerender = false;
 
@@ -30,8 +30,3 @@ export const GET: APIRoute = async (context) => {
 
   return redirect(authorizeUrl, 302);
 };
-
-function safeNext(value: string): string {
-  if (!value.startsWith('/') || value.startsWith('//')) return '/moje/';
-  return value;
-}

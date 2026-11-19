@@ -36,7 +36,7 @@ export const POST: APIRoute = async (context) => {
   const confirm = readFormString(form, 'password_confirm');
 
   if (auth.user.password_hash) {
-    const ok = await verifyPassword(current, auth.user.password_hash);
+    const ok = current.length <= 200 && await verifyPassword(current, auth.user.password_hash);
     if (!ok) return fail('Obecne hasło jest nieprawidłowe.');
   }
 
@@ -45,6 +45,7 @@ export const POST: APIRoute = async (context) => {
   if (next !== confirm) return fail('Hasła nie są takie same.');
 
   const passwordHash = await hashPassword(next);
-  await updateUserPassword(auth.user.id, passwordHash);
+  const changed = await updateUserPassword(auth.user.id, passwordHash, auth.user.password_hash, auth.session.id);
+  if (!changed) return fail('Hasło zostało już zmienione. Zaloguj się ponownie.');
   return redirect('/profil/?ok=' + encodeURIComponent('Hasło zapisane.'));
 };

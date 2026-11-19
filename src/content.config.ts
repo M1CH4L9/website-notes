@@ -33,12 +33,22 @@ const subjects = defineCollection({
   }),
 });
 
+const folders = defineCollection({
+  loader: glob({
+    base: CONTENT_DIR,
+    pattern: '*/*/**/folder.{yaml,yml}',
+    generateId: ({ entry }) => entry.slice(0, entry.lastIndexOf('/')),
+  }),
+  schema: z.object({ title: z.string(), description: z.string().optional(), order: z.number().optional() }),
+});
+
 const notes = defineCollection({
   loader: glob({
     base: CONTENT_DIR,
-    pattern: '*/*.{md,mdx}',
+    pattern: '*/**/*.{md,mdx}',
     generateId: ({ entry }) => {
-      const [subject, file] = entry.split('/');
+      const [subject, ...parts] = entry.split('/');
+      const file = parts.at(-1)!;
       return `${subject}/${stripOrderPrefix(file.replace(/\.mdx?$/, ''))}`;
     },
   }),
@@ -51,7 +61,8 @@ const notes = defineCollection({
     order: z.number().optional(),
     /** Szkic jest widoczny tylko lokalnie (npm run dev). */
     draft: z.boolean().default(false),
+    archive: z.boolean().default(false),
   }),
 });
 
-export const collections = { subjects, notes };
+export const collections = { subjects, notes, folders };
