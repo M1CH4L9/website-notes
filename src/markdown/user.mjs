@@ -180,6 +180,7 @@ export async function renderPdfMarkdown(source) {
     ],
     shikiConfig,
     smartypants: false,
+    remarkRehype: { footnoteLabel: 'Przypisy', footnoteBackLabel: 'Wróć do miejsca w tekście' },
   });
   const processor = await pdfProcessorPromise;
   const result = await processor.render(source || '');

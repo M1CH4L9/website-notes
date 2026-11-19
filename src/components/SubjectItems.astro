@@ -14,7 +14,7 @@ const notes = subject.notes.filter(note => !note.archive && (note.folder ?? '') 
     <CatSleeping class="list-cat" />
     <ul class="note-list">
       {folders.map(folder => (
-        <li><a class="note-link" href={folder.url}>
+        <li><a class="note-link" data-astro-prefetch href={folder.url}>
           <span class="note-title"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M3 7V5h6l2 2h10v12H3Z" /></svg> {folder.title}</span>
           {folder.description && <span class="note-desc">{folder.description}</span>}
           <span class="note-date">{countNotes(subject.notes.filter(note => !note.archive && (note.folder === folder.path || note.folder?.startsWith(`${folder.path}/`))).length)}</span>
@@ -22,7 +22,7 @@ const notes = subject.notes.filter(note => !note.archive && (note.folder ?? '') 
         </a></li>
       ))}
       {notes.map(note => (
-        <li><a class="note-link" href={note.url}>
+        <li><a class="note-link" data-astro-prefetch href={note.url}>
           <span class="note-title">{note.title}</span>
           {note.description && <span class="note-desc">{note.description}</span>}
           {note.updated && <time class="note-date" datetime={isoDate(note.updated)}>{formatDate(note.updated)}</time>}

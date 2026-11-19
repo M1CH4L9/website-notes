@@ -86,10 +86,11 @@ notatki/
       folder.yaml
       cw01/
         folder.yaml
-        01-zadanie-1-1.md
+        cw01.md
+        cw01_p.md
 ```
 
-Każdy widoczny folder ma `folder.yaml` z `title` i opcjonalnymi `description` oraz `order`. Foldery można zagnieżdżać. Adres notatki zależy od nazwy pliku (po pominięciu liczbowego prefiksu), więc nazwy muszą być unikalne w całym przedmiocie. Przeniesienie pliku do folderu zachowuje adres. `archive: true` ukrywa notatkę z list, zachowując dostęp przez jej adres. Pełna wersja „Rozwiązań” BSI jest archiwum ze starymi kotwicami. Bieżące zadania edytuj w odpowiednim folderze ćwiczenia.
+Każdy widoczny folder ma `folder.yaml` z `title` i opcjonalnymi `description` oraz `order`. Foldery można zagnieżdżać. Adres notatki zależy od nazwy pliku (po pominięciu liczbowego prefiksu), więc nazwy muszą być unikalne w całym przedmiocie. Przeniesienie pliku do folderu zachowuje adres. `archive: true` ukrywa notatkę z list, zachowując dostęp przez jej adres. Pełna wersja „Rozwiązań” BSI jest archiwum ze starymi kotwicami. Każde ćwiczenie ma dwa zestawy jak w repozytorium BSI, np. `cw01.md` i `cw01_p.md`. Stare adresy pojedynczych zadań przekierowują do odpowiednich nagłówków.
 
 Szczegóły składni Markdowna (kod, tabele, wzory, callouty) jak wcześniej - te same elementy działają w notatkach użytkowników.
 
@@ -148,7 +149,7 @@ PDF/zdjęcia, kursory live (Yjs) - schemat share nie blokuje.
 
 `/api/notes/download?...&format=pdf` generuje PDF po stronie serwera przez Puppeteer i Chromium (pakiet `@sparticuz/chromium`, dołączony do funkcji Vercel). Wykorzystuje te same kontrole dostępu co eksport Markdown: prywatną notatkę pobiera właściciel, udostępnioną - posiadacz aktywnego linku. Nie otwiera okna drukowania ani nie zmienia motywu strony.
 
-Dokument A4 ma tekst do zaznaczania i wyszukiwania, osadzone fonty, numerację stron, podświetlanie kodu, automatyczny podział treści i powtarzane nagłówki tabel. Kod zawija długie linie, a rozwijane sekcje są otwarte w PDF. Nie korzysta z canvas ani z obrazów całych stron. Blok dłuższy niż strona dzieli się między stronami.
+Dokument A4 ma tekst do zaznaczania i wyszukiwania, osadzone fonty, numerację stron, zakładki rozdziałów w czytniku PDF, podświetlanie kodu, automatyczny podział treści i powtarzane nagłówki tabel. Kod zawija długie linie, a rozwijane sekcje są otwarte w PDF. Nie korzysta z canvas ani z obrazów całych stron. Blok dłuższy niż strona dzieli się między stronami.
 
 Generator uruchamia się w Node.js 24. Konfiguracja Astro dołącza Chromium, fonty i lokalne obrazki do funkcji; nie potrzeba klucza zewnętrznej usługi. Pierwsze pobranie może potrwać kilka sekund. Jedna instancja obsługuje jeden eksport naraz; zajętość zwraca 503 z komunikatem ponowienia. Funkcja ma limit 60 sekund. `PDF_CHROMIUM_PATH` opcjonalnie wskazuje własny Chromium lokalnie.
 

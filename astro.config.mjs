@@ -17,9 +17,8 @@ export default defineConfig({
     '/przedmioty': '/',
   },
   prefetch: {
-    prefetchAll: true,
-    // Viewport: dokumenty ładują się zanim użytkownik kliknie (szybsza nawigacja).
-    defaultStrategy: 'viewport',
+    prefetchAll: false,
+    defaultStrategy: 'hover',
   },
   security: {
     checkOrigin: true,

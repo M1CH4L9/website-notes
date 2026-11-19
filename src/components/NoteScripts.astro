@@ -124,6 +124,11 @@
     };
   }
 
+  document.addEventListener('click', (event) => {
+    const open = document.querySelector<HTMLDetailsElement>('[data-note-download][open]');
+    if (open && !open.contains(event.target as Node)) open.open = false;
+  });
+
   function bindNoteDownload() {
     document.querySelectorAll<HTMLDetailsElement>('[data-note-download]').forEach((root) => {
       if (root.dataset.ready === '1') return;
@@ -142,12 +147,6 @@
         } finally {
           pdfButton.disabled = false;
         }
-      });
-
-      document.addEventListener('click', (event) => {
-        if (!root.open) return;
-        if (root.contains(event.target as Node)) return;
-        root.open = false;
       });
 
       root.addEventListener('keydown', (event) => {

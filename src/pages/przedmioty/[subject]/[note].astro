@@ -13,17 +13,29 @@ import Toc from '../../../components/Toc.astro';
 import Base from '../../../layouts/Base.astro';
 import { formatDate, isoDate } from '../../../lib/format';
 import { noteFilename } from '../../../lib/note-export';
-import { folderBreadcrumbs, getSubjects } from '../../../lib/notes';
-import { renderUserMarkdown } from '../../../markdown/user.mjs';
+import { folderBreadcrumbs, getFileSubject, getSubjects } from '../../../lib/notes';
+import { getPublication } from '../../../lib/server/publication-notes';
 
-const subjects = await getSubjects();
-const subject = subjects.find((item) => item.slug === Astro.params.subject);
-if (!subject) {
-  return Astro.redirect('/404');
+const subjectSlug = Astro.params.subject!;
+const slug = Astro.params.note!;
+const fileSubject = await getFileSubject(subjectSlug);
+const fileNote = fileSubject?.notes.find(item => item.slug === slug);
+
+// Stary link do pojedynczego zadania otwiera jego nagłówek w zestawie.
+const task = subjectSlug === 'bsi' && /^zadanie-([1-7])-(\d+)(p?)$/.exec(slug);
+if (task && !fileNote) {
+  const [, exercise, number, extra] = task;
+  const sheet = fileSubject?.notes.find(item => item.slug === `cw0${exercise}${extra ? '_p' : ''}`);
+  if (sheet?.entry) {
+    const heading = (await render(sheet.entry)).headings.find(h => h.text.startsWith(`${exercise}.${number}${extra} - `));
+    if (heading) return Astro.redirect(`${sheet.url}#${encodeURIComponent(heading.slug)}`, 301);
+  }
 }
 
-const index = subject.notes.findIndex((item) => item.slug === Astro.params.note);
-const note = subject.notes[index];
+// Foldery mają tylko treści plikowe. Publikacje pojawiają się na poziomie przedmiotu.
+const subject = fileNote?.folder ? fileSubject : (await getSubjects(subjectSlug))[0];
+if (!subject) return Astro.redirect('/404');
+const note = subject.notes.find(item => item.slug === slug);
 if (!note) {
   return Astro.redirect('/404');
 }
@@ -41,7 +53,10 @@ if (note.entry) {
   Content = rendered.Content;
   headings = rendered.headings;
 } else if (note.publication) {
-  const rendered = await renderUserMarkdown(note.publication.body);
+  const publication = await getPublication(subjectSlug, slug);
+  if (!publication) return Astro.redirect('/404');
+  const { renderUserMarkdown } = await import('../../../markdown/user.mjs');
+  const rendered = await renderUserMarkdown(publication.body);
   html = rendered.html;
   headings = rendered.headings;
 }
@@ -102,13 +117,13 @@ const copyHref = note.publication
           <nav class="note-pager" aria-label="Sąsiednie notatki">
             <CatPeek class="pager-cat" />
             {previous && (
-              <a class="pager-link is-previous" href={previous.url} rel="prev">
+              <a class="pager-link is-previous" data-astro-prefetch href={previous.url} rel="prev">
                 <span class="pager-label">Poprzednia</span>
                 <span class="pager-title">{previous.title}</span>
               </a>
             )}
             {next && (
-              <a class="pager-link is-next" href={next.url} rel="next">
+              <a class="pager-link is-next" data-astro-prefetch href={next.url} rel="next">
                 <span class="pager-label">Następna</span>
                 <span class="pager-title">{next.title}</span>
               </a>

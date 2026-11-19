@@ -16,19 +16,16 @@ export type Publication = {
   updated_at: Date;
 };
 
-export async function listActivePublications(): Promise<Publication[]> {
-  const { rows } = await query<Publication>(
-    `SELECT * FROM publications WHERE is_active = TRUE ORDER BY updated_at DESC`,
-  );
-  return rows;
-}
+export type PublicationSummary = Pick<Publication,
+  'id' | 'subject_slug' | 'slug' | 'title' | 'description' | 'author_username' | 'updated_at'
+>;
 
-export async function listPublicationsBySubject(subjectSlug: string): Promise<Publication[]> {
-  const { rows } = await query<Publication>(
-    `SELECT * FROM publications
-     WHERE subject_slug = $1 AND is_active = TRUE
-     ORDER BY updated_at DESC`,
-    [subjectSlug],
+export async function listActivePublications(subjectSlug?: string): Promise<PublicationSummary[]> {
+  const { rows } = await query<PublicationSummary>(
+    `SELECT id, subject_slug, slug, title, description, author_username, updated_at
+     FROM publications WHERE is_active = TRUE
+     ${subjectSlug ? 'AND subject_slug = $1' : ''} ORDER BY updated_at DESC`,
+    subjectSlug ? [subjectSlug] : [],
   );
   return rows;
 }

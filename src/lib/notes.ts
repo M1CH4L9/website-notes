@@ -1,7 +1,7 @@
 import { getCollection, type CollectionEntry } from 'astro:content';
 import { isDatabaseConfigured } from './server/env';
-import { listCatalogSubjects } from './server/catalog';
-import { listActivePublications, type Publication } from './server/publication-notes';
+import { getCatalogSubject, listCatalogSubjects } from './server/catalog';
+import { listActivePublications, type PublicationSummary } from './server/publication-notes';
 
 /*
  * Jedyna warstwa, przez którą strony czytają przedmioty i notatki.
@@ -43,7 +43,7 @@ export interface Note {
   /** Notatka z kolekcji plików. */
   entry?: NoteEntry;
   /** Snapshot publikacji z bazy. */
-  publication?: Publication;
+  publication?: PublicationSummary;
   authorUsername?: string;
 }
 
@@ -71,7 +71,7 @@ function toFileNote(entry: NoteEntry): Note {
   };
 }
 
-function toPublicationNote(pub: Publication): Note {
+function toPublicationNote(pub: PublicationSummary): Note {
   return {
     slug: pub.slug,
     subjectSlug: pub.subject_slug,
@@ -101,7 +101,7 @@ function compareNotes(a: Note, b: Note): number {
   return collator.compare(a.title, b.title);
 }
 
-export async function getSubjects(): Promise<Subject[]> {
+async function loadFileCatalog() {
   const [subjectEntries, noteEntries, folderEntries] = await Promise.all([
     getCollection('subjects'),
     getCollection('notes', ({ data }) => import.meta.env.DEV || !data.draft),
@@ -133,11 +133,35 @@ export async function getSubjects(): Promise<Subject[]> {
     });
   }
 
+  return bySlug;
+}
+
+// Wdrożenie ma niezmienne pliki. W dev ponownie odczytujemy kolekcję po edycji.
+let fileCatalog: ReturnType<typeof loadFileCatalog> | undefined;
+function getFileCatalog() {
+  if (import.meta.env.DEV) return loadFileCatalog();
+  return fileCatalog ??= loadFileCatalog().catch(error => {
+    fileCatalog = undefined;
+    throw error;
+  });
+}
+
+export async function getFileSubject(slug: string) {
+  return (await getFileCatalog()).get(slug);
+}
+
+export async function getSubjects(slug?: string): Promise<Subject[]> {
+  const files = await getFileCatalog();
+  const bySlug = new Map<string, Subject>();
+  for (const [key, subject] of files) {
+    if (!slug || key === slug) bySlug.set(key, { ...subject, notes: [...subject.notes] });
+  }
+
   if (isDatabaseConfigured()) {
     try {
       const [catalog, publications] = await Promise.all([
-        listCatalogSubjects(),
-        listActivePublications(),
+        slug ? getCatalogSubject(slug).then(row => row ? [row] : []) : listCatalogSubjects(),
+        listActivePublications(slug),
       ]);
 
       for (const subject of catalog) {
@@ -183,11 +207,7 @@ export async function getSubjects(): Promise<Subject[]> {
           // Nie nadpisuj notatki z pliku - publikacja z kolizją slug zostaje pominięta na liście.
           continue;
         }
-        const withoutOld = subject.notes.filter(
-          (n) => !(n.publication && n.publication.id === pub.id),
-        );
-        withoutOld.push(toPublicationNote(pub));
-        subject.notes = withoutOld;
+        subject.notes.push(toPublicationNote(pub));
       }
     } catch (error) {
       console.error('[notes] merge publications', error);
