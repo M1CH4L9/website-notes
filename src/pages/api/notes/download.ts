@@ -1,11 +1,11 @@
 import type { APIRoute } from 'astro';
-import { getCollection } from 'astro:content';
+import { getEntry } from 'astro:content';
 import { buildNoteMarkdown, markdownDownloadResponse, noteFilename } from '../../../lib/note-export';
 import { getAuthFromCookies } from '../../../lib/server/sessions';
 import { getPublication, getPublicationById } from '../../../lib/server/publication-notes';
 import { getActiveShareByToken } from '../../../lib/server/shares';
 import { getNoteByUserAndSlug } from '../../../lib/server/user-notes';
-import { isDatabaseConfigured } from '../../../lib/server/env';
+import { isDatabaseConfigured, publicSiteUrl } from '../../../lib/server/env';
 import { json } from '../../../lib/server/http';
 
 export const prerender = false;
@@ -14,10 +14,10 @@ export const GET: APIRoute = async (context) => {
   const kind = context.url.searchParams.get('kind') || '';
   const format = context.url.searchParams.get('format') || 'md';
   if (!['md', 'pdf'].includes(format)) return json({ error: 'Nieznany format.' }, 400);
-  const respond = async (markdown: string, filename: string) => {
+  const respond = async (markdown: string, filename: string, pagePath: string, assetDirectory = '/') => {
     if (format === 'md') return markdownDownloadResponse(markdown, filename);
     const { createNotePdf } = await import('../../../lib/server/note-pdf');
-    const bytes = await createNotePdf(markdown, context.url.searchParams.get('subject') || '');
+    const bytes = await createNotePdf(markdown, new URL(pagePath, publicSiteUrl(context.url)), assetDirectory);
     return new Response(Buffer.from(bytes), { headers: {
       'content-type': 'application/pdf',
       'content-disposition': `attachment; filename="${filename}.pdf"`,
@@ -32,9 +32,8 @@ export const GET: APIRoute = async (context) => {
       const noteSlug = context.url.searchParams.get('note') || '';
       if (!subject || !noteSlug) return json({ error: 'Brak adresu notatki.' }, 400);
 
-      const notes = await getCollection('notes', ({ data }) => import.meta.env.DEV || !data.draft);
-      const entry = notes.find((n) => n.id === `${subject}/${noteSlug}`);
-      if (entry) {
+      const entry = await getEntry('notes', `${subject}/${noteSlug}`);
+      if (entry && (import.meta.env.DEV || !entry.data.draft)) {
         const body = typeof entry.body === 'string' ? entry.body : '';
         const markdown = buildNoteMarkdown({
           title: entry.data.title,
@@ -42,7 +41,9 @@ export const GET: APIRoute = async (context) => {
           updated: entry.data.updated,
           body,
         });
-        return await respond(markdown, noteFilename(noteSlug, entry.data.title));
+        const directory = entry.filePath?.split('/').slice(0, -1).join('/');
+        return await respond(markdown, noteFilename(noteSlug, entry.data.title),
+          `/przedmioty/${subject}/${noteSlug}/`, `/${directory || 'notatki/' + subject}/`);
       }
 
       if (!isDatabaseConfigured()) return json({ error: 'Nie znaleziono notatki.' }, 404);
@@ -54,7 +55,7 @@ export const GET: APIRoute = async (context) => {
         updated: pub.updated_at,
         body: pub.body,
       });
-      return await respond(markdown, noteFilename(noteSlug, pub.title));
+      return await respond(markdown, noteFilename(noteSlug, pub.title), `/przedmioty/${subject}/${noteSlug}/`);
     }
 
     if (kind === 'publication') {
@@ -69,7 +70,7 @@ export const GET: APIRoute = async (context) => {
         updated: pub.updated_at,
         body: pub.body,
       });
-      return await respond(markdown, noteFilename(pub.slug, pub.title));
+      return await respond(markdown, noteFilename(pub.slug, pub.title), `/przedmioty/${pub.subject_slug}/${pub.slug}/`);
     }
 
     if (kind === 'mine') {
@@ -86,7 +87,7 @@ export const GET: APIRoute = async (context) => {
         updated: note.updated_at,
         body: note.body,
       });
-      return await respond(markdown, noteFilename(note.slug, note.title));
+      return await respond(markdown, noteFilename(note.slug, note.title), `/moje/${note.slug}/`);
     }
 
     if (kind === 'share') {
@@ -102,7 +103,7 @@ export const GET: APIRoute = async (context) => {
         updated: note.updated_at,
         body: note.body,
       });
-      return await respond(markdown, noteFilename(note.slug, note.title));
+      return await respond(markdown, noteFilename(note.slug, note.title), '/');
     }
 
     return json({ error: 'Nieznany rodzaj pobierania.' }, 400);

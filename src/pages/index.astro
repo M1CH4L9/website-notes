@@ -29,7 +29,7 @@ const subjects = await getSubjects();
               data-subject-slug={subject.slug}
             >
               {index === 0 && <CatPeek class="card-cat" />}
-              <a class="subject-card" href={subject.url}>
+              <a class="subject-card" data-astro-prefetch href={subject.url}>
                 <span class="subject-code">{subject.title}</span>
                 {subject.fullName && <span class="subject-name">{subject.fullName}</span>}
                 <span class="subject-foot">

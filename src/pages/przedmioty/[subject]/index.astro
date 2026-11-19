@@ -4,8 +4,7 @@ import Breadcrumbs from '../../../components/Breadcrumbs.astro';
 import Base from '../../../layouts/Base.astro';
 import { getSubjects } from '../../../lib/notes';
 
-const subjects = await getSubjects();
-const subject = subjects.find((item) => item.slug === Astro.params.subject);
+const [subject] = await getSubjects(Astro.params.subject);
 if (!subject) {
   return Astro.redirect('/404');
 }

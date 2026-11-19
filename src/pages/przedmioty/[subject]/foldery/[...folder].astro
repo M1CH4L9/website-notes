@@ -2,9 +2,9 @@
 import Base from '../../../../layouts/Base.astro';
 import Breadcrumbs from '../../../../components/Breadcrumbs.astro';
 import SubjectItems from '../../../../components/SubjectItems.astro';
-import { folderBreadcrumbs, getSubjects } from '../../../../lib/notes';
+import { folderBreadcrumbs, getFileSubject } from '../../../../lib/notes';
 
-const subject = (await getSubjects()).find(item => item.slug === Astro.params.subject);
+const subject = await getFileSubject(Astro.params.subject ?? '');
 const folder = subject?.folders.find(item => item.path === Astro.params.folder);
 if (!subject || !folder) return Astro.redirect('/404');
 ---

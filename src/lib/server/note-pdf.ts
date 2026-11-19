@@ -5,51 +5,11 @@ import { createRequire } from 'node:module';
 import path from 'node:path';
 import { parse } from 'yaml';
 import { renderPdfMarkdown } from '../../markdown/user.mjs';
+import printCss from '../../styles/note-pdf.css?raw';
 import katexCss from 'katex/dist/katex.min.css?raw';
 
 const require = createRequire(import.meta.url);
 const escape = (s: string) => s.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]!));
-const css = `
-@page { size:A4; margin:17mm 15mm 19mm; }
-* { box-sizing:border-box; }
-html { color-scheme:light; }
-body { margin:0; color:#24292f; background:white; font:10.5pt/1.55 PdfSans,sans-serif; overflow-wrap:anywhere; }
-h1 { font-size:23pt; line-height:1.2; margin:0 0 12pt; }
-header { border-bottom:1px solid #d0d7de; padding-bottom:13pt; margin-bottom:20pt; }
-header p { color:#57606a; margin:7pt 0; }
-h2 { font-size:15pt; border-bottom:1px solid #d8dee4; padding-bottom:5pt; margin:22pt 0 10pt; }
-h3 { font-size:12pt; margin:17pt 0 8pt; }
-h1,h2,h3,h4,summary { break-after:avoid; break-inside:avoid; line-height:1.3; }
-p { margin:8pt 0; widows:3; orphans:3; }
-li { margin:3pt 0; break-inside:avoid; }
-ul,ol { padding-left:19pt; }
-a { color:#0969da; text-decoration:underline; }
-code,pre { font-family:PdfMono,monospace; font-variant-ligatures:none; }
-:not(pre)>code { font-size:.88em; padding:1pt 3pt; background:#eff1f3; border-radius:3pt; box-decoration-break:clone; }
-pre { font-size:8.4pt; line-height:1.5; margin:0; padding:10pt; white-space:pre-wrap!important; overflow-wrap:anywhere!important; word-break:break-word; }
-pre code { white-space:inherit!important; width:auto!important; min-width:0!important; }
-.astro-code,.astro-code span { color:var(--shiki-light,#24292f)!important; background:transparent!important; }
-.code-block { border:1px solid #d0d7de; background:#f6f8fa; border-radius:4pt; margin:12pt 0; box-decoration-break:clone; }
-.code-header { background:#eaeef2; color:#57606a; border-bottom:1px solid #d0d7de; font-size:8pt; padding:5pt 10pt; break-after:avoid; }
-.code-copy,.heading-anchor,.katex-mathml { display:none!important; }
-pre,.code-block { break-inside:auto; }
-pre .line { break-inside:avoid; }
-blockquote,.callout,.markdown-alert { border-left:3pt solid #879ab5; background:#f6f8fa; margin:12pt 0; padding:6pt 12pt; box-decoration-break:clone; }
-summary { font-weight:700; margin-bottom:7pt; }
-details { margin:12pt 0; }
-table { border-collapse:collapse; width:100%; table-layout:fixed; font-size:8.5pt; margin:12pt 0; }
-thead { display:table-header-group; }
-tr { break-inside:avoid; }
-th,td { text-align:left; padding:6pt; border:1px solid #d0d7de; vertical-align:top; overflow-wrap:anywhere; }
-th { background:#f0f3f6; }
-.table-wrap { overflow:visible; }
-img,svg { max-width:100%; height:auto; break-inside:avoid; }
-figure { margin:12pt 0; }
-figcaption { font-size:9pt; color:#57606a; }
-.katex-display { margin:12pt 0; break-inside:avoid; }
-hr { border:0; border-top:1px solid #d0d7de; margin:16pt 0; }
-`;
-
 let assetCss: Promise<string> | undefined;
 async function fontCss() {
   if (!assetCss) assetCss = (async () => {
@@ -78,7 +38,7 @@ async function fontCss() {
 }
 
 let active = false;
-export async function createNotePdf(markdown: string, subject = ''): Promise<Uint8Array> {
+export async function createNotePdf(markdown: string, linkBase: URL, assetDirectory: string): Promise<Uint8Array> {
   if (active) throw new Error('PDF_BUSY');
   active = true;
   let browser: Awaited<ReturnType<typeof puppeteer.launch>> | undefined;
@@ -94,6 +54,9 @@ export async function createNotePdf(markdown: string, subject = ''): Promise<Uin
       headless: true,
     });
     const page = await browser.newPage();
+    // Szerokość pola druku A4 po odjęciu obu marginesów 18 mm.
+    await page.setViewport({ width: Math.round(174 * 96 / 25.4), height: 960 });
+    await page.emulateMediaType('print');
     await page.setJavaScriptEnabled(false);
     await page.setRequestInterception(true);
     const missing: string[] = [];
@@ -118,17 +81,44 @@ export async function createNotePdf(markdown: string, subject = ''): Promise<Uin
         await request.abort();
       }
     });
-    await page.setContent(`<!doctype html><html lang="pl"><head><meta charset="utf-8"><base href="https://pdf.invalid/notatki/${encodeURIComponent(subject)}/"><style>${fonts}\n${css}</style></head><body><header><h1>${escape(String(meta.title || 'Notatka'))}</h1>${meta.description ? `<p>${escape(String(meta.description))}</p>` : ''}</header><main>${rendered.html}</main></body></html>`, {waitUntil:'load',timeout:25000});
-    await page.evaluate(async () => {
+    const title = escape(String(meta.title || 'Notatka'));
+    const assets = new URL(assetDirectory, 'https://pdf.invalid');
+    await page.setContent(`<!doctype html><html lang="pl"><head><meta charset="utf-8"><title>${title}</title><base href="${escape(assets.href)}"><style>${fonts}\n${printCss}</style></head><body><header><h1>${title}</h1>${meta.description ? `<p>${escape(String(meta.description))}</p>` : ''}</header><main>${rendered.html}</main></body></html>`, {waitUntil:'load',timeout:25000});
+    await page.evaluate(async (linkBase) => {
+      // Po wczytaniu obrazków kotwice muszą wskazywać dokument PDF.
+      for (const image of document.images) image.src = image.src;
+      document.querySelector('base')?.remove();
+      for (const anchor of document.querySelectorAll<HTMLAnchorElement>('a[href]')) {
+        const href = anchor.getAttribute('href')!;
+        if (href.startsWith('#')) {
+          let fragment: string;
+          try { fragment = decodeURIComponent(href.slice(1)); } catch { continue; }
+          // Sanityzacja dodaje prefiks do identyfikatorów nagłówków i przypisów.
+          const target = document.getElementById('user-content-' + fragment) || document.getElementById(fragment);
+          if (target) anchor.setAttribute('href', '#' + encodeURIComponent(target.id));
+        } else {
+          try { anchor.href = new URL(href, linkBase).href; } catch { anchor.removeAttribute('href'); }
+        }
+      }
       document.querySelectorAll('details').forEach(el => el.open = true);
       await document.fonts.ready;
       await Promise.all([...document.images].map(img => img.decode()));
       document.querySelectorAll<HTMLElement>('.katex-display').forEach(el => {
         if (el.scrollWidth > el.clientWidth) el.style.fontSize = `${Math.max(.5, el.clientWidth/el.scrollWidth)}em`;
       });
-    });
+      for (const code of document.querySelectorAll(':not(pre) > code')) {
+        if (/^\S{1,20}$/.test(code.textContent ?? '')) code.classList.add('short-token');
+      }
+      // Krótkie przykłady i odpowiedzi pozostają razem, długie mogą się dzielić.
+      for (const block of document.querySelectorAll('.code-block, details, .callout, figure, blockquote, li')) {
+        if (block.getBoundingClientRect().height <= 160) block.classList.add('print-keep');
+      }
+    }, linkBase.href);
     if (missing.length) throw new Error('Nie udało się wczytać obrazków do PDF.');
-    return await page.pdf({format:'A4',preferCSSPageSize:true,printBackground:true,displayHeaderFooter:true,headerTemplate:'<span></span>',footerTemplate:'<div style="font-size:8px;color:#69727d;width:100%;text-align:center"><span class="pageNumber"></span> / <span class="totalPages"></span></div>',timeout:25000});
+    return await page.pdf({
+      format: 'A4', preferCSSPageSize: true, printBackground: true,
+      tagged: true, outline: true, timeout: 25000,
+    });
   } finally {
     try { await browser?.close(); } finally { active = false; }
   }

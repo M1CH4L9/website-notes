@@ -68,6 +68,7 @@ try {
  }
  const context=await browser.newContext();
  for(const [subject,note,expected] of [
+  ['bsi','bsi-kolokwium-1',['Przygotowanie kolokwium 1','Źródła i różnice wersji']],
   ['bsi','bsi-rozwiazania',['Rozwiązania','Sprawdzono kompletność']],
   ['test','wzory-i-mdx',['Wzory i elementy MDX','Rozwiązanie zadania']],
   ['test','formatowanie-tekstu',['Tabele','Obrazki']],
@@ -77,6 +78,13 @@ try {
   const file=join(output,`${note}.pdf`);await import('node:fs/promises').then(async fs=>fs.writeFile(file,await response.body()));
   const text=execFileSync('pdftotext',['-layout',file,'-'],{encoding:'utf8'});
   for(const fragment of expected)assert.ok(text.includes(fragment),`Missing ${fragment} in ${note}`);
+  if (note === 'bsi-kolokwium-1') {
+   const info = execFileSync('pdfinfo', [file], {encoding:'utf8'});
+   assert.match(info, /^Title:\s+Przygotowanie kolokwium 1$/m);
+   const links = execFileSync('pdfinfo', ['-url',file], {encoding:'utf8'});
+   assert.doesNotMatch(links, /pdf\.invalid/);
+   assert.match(links, /https?:\/\/[^\s]+\/przedmioty\/bsi\/bsi-rozwiazania\//);
+  }
   console.log(`PASS server PDF: ${note}, selectable text and final content`);
  }
  assert.equal((await context.request.get(`${base}/api/notes/download?kind=public&subject=bsi&note=missing&format=pdf`)).status(),404);

@@ -70,7 +70,7 @@ const serverCute = user?.pref_cute == null ? undefined : user.pref_cute ? '1' : 
     {/* Pusty ontouchstart sprawia, że iOS Safari pokazuje stany :active po dotknięciu. */}
     <a class="skip-link" href="#tresc">Przejdź do treści</a>
 
-    <header class="site-header" transition:name="site-header" transition:persist="site-header">
+    <header class="site-header" transition:name="site-header">
       <div class="container site-header-inner">
         <a class="brand" href="/" aria-label={`${site.name}, strona główna`}>
           <CatMark class="brand-mark" />
@@ -170,6 +170,20 @@ const serverCute = user?.pref_cute == null ? undefined : user.pref_cute ? '1' : 
 
     <script>
       const g = window as Window & { __navMenuBooted?: boolean; __navMenuClosing?: boolean };
+
+      document.addEventListener('astro:before-preparation', event => {
+        const header = document.querySelector('.site-header');
+        const timer = window.setTimeout(() => header?.classList.add('is-loading'), 200);
+        const clear = () => {
+          clearTimeout(timer);
+          header?.classList.remove('is-loading');
+        };
+        const load = event.loader;
+        event.loader = async () => {
+          try { await load(); } finally { clear(); }
+        };
+        event.signal.addEventListener('abort', clear, { once: true });
+      });
 
       function getParts() {
         return {
