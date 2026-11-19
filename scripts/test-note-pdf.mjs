@@ -79,6 +79,9 @@ try {
   const text=execFileSync('pdftotext',['-layout',file,'-'],{encoding:'utf8'});
   for(const fragment of expected)assert.ok(text.includes(fragment),`Missing ${fragment} in ${note}`);
   if (note === 'bsi-kolokwium-1') {
+   assert.ok(text.replace(/\s+/g, ' ').includes('Poznaj system i sieć → znajdź hosty i usługi → obejrzyj aplikację'));
+   const fonts = execFileSync('pdffonts', ['-f', '1', '-l', '1', file], {encoding:'utf8'});
+   assert.match(fonts, /KaTeX_Main-Bold[^\n]+?\byes\s+yes\s+yes\b/, 'Embedded bold arrow glyphs on page one');
    const info = execFileSync('pdfinfo', [file], {encoding:'utf8'});
    assert.match(info, /^Title:\s+Przygotowanie kolokwium 1$/m);
    const links = execFileSync('pdfinfo', ['-url',file], {encoding:'utf8'});

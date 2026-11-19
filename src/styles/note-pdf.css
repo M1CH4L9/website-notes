@@ -1,15 +1,28 @@
+/* Osobna rodzina korzysta z osadzonych glifów także w tekście pisanym kursywą. */
+@font-face {
+  font-family: PdfArrows;
+  src: url(fonts/KaTeX_Main-Regular.woff2) format("woff2");
+  font-weight: 400;
+  unicode-range: U+2190-21FF;
+}
+@font-face {
+  font-family: PdfArrows;
+  src: url(fonts/KaTeX_Main-Bold.woff2) format("woff2");
+  font-weight: 700;
+  unicode-range: U+2190-21FF;
+}
 @page {
   size: A4;
   margin: 17mm 18mm 19mm;
   @bottom-left {
     content: "Notatki";
     color: #5d6773;
-    font: 9pt PdfSans, sans-serif;
+    font: 9pt PdfSans, PdfArrows, sans-serif;
   }
   @bottom-right {
     content: counter(page) " / " counter(pages);
     color: #5d6773;
-    font: 9pt PdfSans, sans-serif;
+    font: 9pt PdfSans, PdfArrows, sans-serif;
   }
 }
 * { box-sizing: border-box; }
@@ -17,7 +30,7 @@ html { color-scheme: light; print-color-adjust: exact; }
 body {
   margin: 0;
   color: #242932;
-  font: 10.5pt/1.48 PdfSans, sans-serif;
+  font: 10.5pt/1.48 PdfSans, PdfArrows, sans-serif;
   overflow-wrap: anywhere;
 }
 header { border-bottom: 1.5pt solid #69516b; padding-bottom: 10pt; margin-bottom: 14pt; }
@@ -37,7 +50,7 @@ li { margin: 2.5pt 0; }
 ul.contains-task-list { list-style: none; padding-left: 0; }
 .task-list-item input { margin: 0 5pt 0 0; vertical-align: middle; }
 a { color: #29567f; text-underline-offset: .12em; }
-code, pre { font-family: PdfMono, monospace; font-variant-ligatures: none; }
+code, pre { font-family: PdfMono, PdfArrows, monospace; font-variant-ligatures: none; }
 :not(pre) > code {
   font-size: .87em;
   background: #f0f2f4;

@@ -11,7 +11,7 @@ import katexCss from 'katex/dist/katex.min.css?raw';
 const require = createRequire(import.meta.url);
 const escape = (s: string) => s.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]!));
 let assetCss: Promise<string> | undefined;
-async function fontCss() {
+async function embeddedPrintStyles() {
   if (!assetCss) assetCss = (async () => {
     async function embeddedFont(packageName: string, family: string) {
       let sheet = await readFile(require.resolve(`${packageName}/wght.css`), 'utf8');
@@ -24,15 +24,15 @@ async function fontCss() {
     }
     const sans = await embeddedFont('@fontsource-variable/figtree', 'PdfSans');
     const mono = await embeddedFont('@fontsource-variable/jetbrains-mono', 'PdfMono');
-    let math = katexCss;
-    const urls = [...new Set([...math.matchAll(/url\((fonts\/[^)]+\.woff2)\)/g)].map(m=>m[1]))];
+    let styles = `${katexCss}\n${printCss}`;
+    const urls = [...new Set([...styles.matchAll(/url\((fonts\/[^)]+\.woff2)\)/g)].map(m=>m[1]))];
     for (const url of urls) {
       const data = await readFile(require.resolve(`katex/dist/${url}`));
-      math = math.replaceAll(`url(${url})`, `url(data:font/woff2;base64,${data.toString('base64')})`);
+      styles = styles.replaceAll(`url(${url})`, `url(data:font/woff2;base64,${data.toString('base64')})`);
     }
     // WOFF2 jest obsługiwany przez Chromium; pozostałe formaty nie są potrzebne.
-    math = math.replace(/,url\(fonts\/[^)]+\)/g, '');
-    return `${math}\n${sans}\n${mono}`;
+    styles = styles.replace(/,url\(fonts\/[^)]+\)/g, '');
+    return `${styles}\n${sans}\n${mono}`;
   })();
   return assetCss;
 }
@@ -47,7 +47,7 @@ export async function createNotePdf(markdown: string, linkBase: URL, assetDirect
     if (!match) throw new Error('Nieprawidłowa treść notatki.');
     const meta = parse(match[1]);
     const rendered = await renderPdfMarkdown(match[2]);
-    const fonts = await fontCss();
+    const styles = await embeddedPrintStyles();
     browser = await puppeteer.launch({
       args: chromium.args,
       executablePath: process.env.PDF_CHROMIUM_PATH || await chromium.executablePath(),
@@ -83,7 +83,7 @@ export async function createNotePdf(markdown: string, linkBase: URL, assetDirect
     });
     const title = escape(String(meta.title || 'Notatka'));
     const assets = new URL(assetDirectory, 'https://pdf.invalid');
-    await page.setContent(`<!doctype html><html lang="pl"><head><meta charset="utf-8"><title>${title}</title><base href="${escape(assets.href)}"><style>${fonts}\n${printCss}</style></head><body><header><h1>${title}</h1>${meta.description ? `<p>${escape(String(meta.description))}</p>` : ''}</header><main>${rendered.html}</main></body></html>`, {waitUntil:'load',timeout:25000});
+    await page.setContent(`<!doctype html><html lang="pl"><head><meta charset="utf-8"><title>${title}</title><base href="${escape(assets.href)}"><style>${styles}</style></head><body><header><h1>${title}</h1>${meta.description ? `<p>${escape(String(meta.description))}</p>` : ''}</header><main>${rendered.html}</main></body></html>`, {waitUntil:'load',timeout:25000});
     await page.evaluate(async (linkBase) => {
       // Po wczytaniu obrazków kotwice muszą wskazywać dokument PDF.
       for (const image of document.images) image.src = image.src;
