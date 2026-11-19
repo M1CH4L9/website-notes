@@ -2,7 +2,7 @@ import type { APIRoute } from 'astro';
 import { finishGithubOAuth, githubStateCookie } from '../../../lib/server/github';
 import { createSession, setSessionCookie } from '../../../lib/server/sessions';
 import { upsertGithubUser } from '../../../lib/server/users';
-import { redirect } from '../../../lib/server/http';
+import { redirect, safeNext } from '../../../lib/server/http';
 
 export const prerender = false;
 
@@ -46,8 +46,3 @@ export const GET: APIRoute = async (context) => {
   context.cookies.delete('gh_next', { path: '/' });
   return redirect(safeNext(next));
 };
-
-function safeNext(value: string): string {
-  if (!value.startsWith('/') || value.startsWith('//')) return '/moje/';
-  return value;
-}

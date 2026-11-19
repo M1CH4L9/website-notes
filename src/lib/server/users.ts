@@ -1,9 +1,10 @@
-import { query } from './db';
+import { query, transaction } from './db';
 import { adminGithubLogin } from './env';
 
 export type User = {
   id: string;
   username: string;
+  email: string | null;
   password_hash: string | null;
   github_id: string | null;
   github_login: string | null;
@@ -45,16 +46,6 @@ export async function findUserById(id: string): Promise<User | null> {
 export async function findUserByGithubId(githubId: string): Promise<User | null> {
   const { rows } = await query<User>('SELECT * FROM users WHERE github_id = $1 LIMIT 1', [githubId]);
   return rows[0] ?? null;
-}
-
-export async function createUserWithPassword(username: string, passwordHash: string): Promise<User> {
-  const { rows } = await query<User>(
-    `INSERT INTO users (username, password_hash, is_admin)
-     VALUES ($1, $2, FALSE)
-     RETURNING *`,
-    [username, passwordHash],
-  );
-  return rows[0];
 }
 
 export async function upsertGithubUser(input: {
@@ -136,13 +127,13 @@ export async function updateUserPreferences(
   return rows[0];
 }
 
-export async function updateUserPassword(userId: string, passwordHash: string): Promise<User> {
-  const { rows } = await query<User>(
-    `UPDATE users
-     SET password_hash = $2
-     WHERE id = $1
-     RETURNING *`,
-    [userId, passwordHash],
-  );
-  return rows[0];
+export async function updateUserPassword(userId: string, passwordHash: string, previousHash: string | null, sessionId: string): Promise<boolean> {
+  return transaction(async client => {
+    const result = await client.query('UPDATE users SET password_hash = $2 WHERE id = $1 AND password_hash IS NOT DISTINCT FROM $3',
+      [userId, passwordHash, previousHash]);
+    if (!result.rowCount) return false;
+    await client.query('DELETE FROM sessions WHERE user_id = $1 AND id <> $2', [userId, sessionId]);
+    await client.query("DELETE FROM account_email_links WHERE user_id = $1 AND purpose = 'reset'", [userId]);
+    return true;
+  });
 }

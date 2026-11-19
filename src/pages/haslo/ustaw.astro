@@ -1,0 +1,6 @@
+---
+import EmailConfirmation from '../../components/account/EmailConfirmation.astro';
+Astro.response.headers.set('Cache-Control', 'no-store');
+Astro.response.headers.set('Referrer-Policy', 'no-referrer');
+---
+<EmailConfirmation purpose="reset" />

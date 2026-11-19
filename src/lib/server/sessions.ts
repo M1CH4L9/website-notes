@@ -29,15 +29,18 @@ export function createSessionToken(): { token: string; tokenHash: string; csrfSe
   return { token, tokenHash: hashToken(token), csrfSecret };
 }
 
-export async function createSession(userId: string): Promise<{ token: string; session: SessionRow }> {
+export async function createSession(userId: string, passwordHash?: string): Promise<{ token: string; session: SessionRow }> {
   const { token, tokenHash, csrfSecret } = createSessionToken();
   const expires = new Date(Date.now() + sessionTtlMs());
   const { rows } = await query<SessionRow>(
     `INSERT INTO sessions (user_id, token_hash, csrf_secret, expires_at)
-     VALUES ($1, $2, $3, $4)
+     SELECT id, $2, $3, $4 FROM users
+     WHERE id = $1 AND ($5::text IS NULL OR password_hash = $5)
+     FOR UPDATE
      RETURNING *`,
-    [userId, tokenHash, csrfSecret, expires],
+    [userId, tokenHash, csrfSecret, expires, passwordHash ?? null],
   );
+  if (!rows[0]) throw new Error('Dane logowania uległy zmianie.');
   return { token, session: rows[0] };
 }
 
@@ -72,6 +75,7 @@ export async function destroySession(token: string | undefined) {
 type SessionUserRow = SessionRow & {
   user_id: string;
   username: string;
+  email: string | null;
   password_hash: string | null;
   github_id: string | null;
   github_login: string | null;
@@ -88,7 +92,7 @@ export async function getAuthFromCookies(cookies: AstroCookies): Promise<AuthCon
   // Jedno zapytanie zamiast sesji + użytkownika osobno (mniej round-tripów do Neonu).
   const { rows } = await query<SessionUserRow>(
     `SELECT s.id, s.user_id, s.token_hash, s.csrf_secret, s.expires_at, s.created_at,
-            u.username, u.password_hash, u.github_id, u.github_login, u.is_admin,
+            u.username, u.email, u.password_hash, u.github_id, u.github_login, u.is_admin,
             u.pref_theme, u.pref_cute,
             u.created_at AS created_at_user
      FROM sessions s
@@ -117,6 +121,7 @@ export async function getAuthFromCookies(cookies: AstroCookies): Promise<AuthCon
   const user: User = {
     id: row.user_id,
     username: row.username,
+    email: row.email,
     password_hash: row.password_hash,
     github_id: row.github_id,
     github_login: row.github_login,

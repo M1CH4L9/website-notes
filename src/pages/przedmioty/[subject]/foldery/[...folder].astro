@@ -1,0 +1,23 @@
+---
+import Base from '../../../../layouts/Base.astro';
+import Breadcrumbs from '../../../../components/Breadcrumbs.astro';
+import SubjectItems from '../../../../components/SubjectItems.astro';
+import { folderBreadcrumbs, getSubjects } from '../../../../lib/notes';
+
+const subject = (await getSubjects()).find(item => item.slug === Astro.params.subject);
+const folder = subject?.folders.find(item => item.path === Astro.params.folder);
+if (!subject || !folder) return Astro.redirect('/404');
+---
+<Base title={`${folder.title} · ${subject.title}`} description={folder.description}>
+  <Breadcrumbs items={[
+    { label: 'Przedmioty', href: '/' },
+    { label: subject.title, href: subject.url },
+    ...folderBreadcrumbs(subject, folder.parent),
+  ]} />
+  <header class="page-head">
+    <h1 class="page-title">{folder.title}</h1>
+    {folder.description && <p class="page-lead">{folder.description}</p>}
+  </header>
+  <SubjectItems subject={subject} path={folder.path} />
+  {subject.slug === 'bsi' && folder.path === 'rozwiazania' && <p class="auth-footer-links"><a href="/przedmioty/bsi/bsi-rozwiazania/">Wszystkie rozwiązania w jednej notatce</a></p>}
+</Base>

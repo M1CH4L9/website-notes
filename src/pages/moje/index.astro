@@ -1,4 +1,6 @@
 ---
+import CsrfField from '../../components/account/CsrfField.astro';
+import { listNoteFolders } from '../../lib/server/note-folders';
 import Base from '../../layouts/Base.astro';
 import AccountNav from '../../components/AccountNav.astro';
 import { formatDate, isoDate } from '../../lib/format';
@@ -16,8 +18,20 @@ const user = Astro.locals.user;
 const error = Astro.url.searchParams.get('error');
 const ok = Astro.url.searchParams.get('ok');
 
-const notes = isDatabaseConfigured() ? await listNotesForUser(user.id) : [];
-const requests = isDatabaseConfigured() ? await listRequestsForUser(user.id) : [];
+const [allNotes, folders, requests] = await Promise.all([
+  listNotesForUser(user.id), listNoteFolders(user.id), listRequestsForUser(user.id),
+]);
+const filter = Astro.url.searchParams.get('folder') ?? '';
+const current = folders.find(folder => folder.id === filter);
+const sort = Astro.url.searchParams.get('sort') === 'title' ? 'title' : 'updated';
+const notes = allNotes.filter(note => current ? note.folder_id === current.id : filter === 'none' ? !note.folder_id : true);
+if (sort === 'title') notes.sort((a, b) => a.title.localeCompare(b.title, 'pl', { numeric: true }));
+function listHref(folder = '', order = sort) {
+  const params = new URLSearchParams();
+  if (folder) params.set('folder', folder);
+  if (order === 'title') params.set('sort', order);
+  return '/moje/' + (params.size ? `?${params}` : '');
+}
 const pendingByNote = new Map(
   requests.filter((r) => r.status === 'pending').map((r) => [r.note_id, r]),
 );
@@ -39,16 +53,46 @@ const publicationByNote = isDatabaseConfigured()
 
   <div class="account-toolbar">
     <AccountNav current="notes" />
-    <a class="button" href="/moje/nowa/">Nowa notatka</a>
+    <a class="button" href={current ? `/moje/nowa/?folder=${current.id}` : "/moje/nowa/"}>Nowa notatka</a>
   </div>
 
   {error && <p class="form-error">{error}</p>}
   {ok && <p class="form-ok">{ok}</p>}
 
+  <nav class="folder-filters" aria-label="Foldery notatek">
+    <a class="button button-secondary" aria-current={!current && filter !== 'none' ? 'page' : undefined} href={listHref()}>Wszystkie</a>
+    <a class="button button-secondary" aria-current={filter === 'none' ? 'page' : undefined} href={listHref('none')}>Bez folderu</a>
+    {folders.map(folder => <a class="button button-secondary" aria-current={current?.id === folder.id ? 'page' : undefined} href={listHref(folder.id)}>{folder.name}</a>)}
+  </nav>
+  <div class="folder-tools">
+    <details>
+      <summary>Nowy folder</summary>
+      <form method="post" action="/api/notes/folders" class="folder-form">
+        <CsrfField /><input type="hidden" name="action" value="create" />
+        <div class="field"><label for="new-folder">Nazwa folderu</label><input id="new-folder" name="name" required maxlength="80" /></div>
+        <button class="button">Utwórz</button>
+      </form>
+    </details>
+    {current && <details>
+      <summary>Zarządzaj folderem</summary>
+      <form method="post" action="/api/notes/folders" class="folder-form">
+        <CsrfField /><input type="hidden" name="action" value="rename" /><input type="hidden" name="id" value={current.id} />
+        <div class="field"><label for="rename-folder">Nazwa folderu</label><input id="rename-folder" name="name" value={current.name} required maxlength="80" /></div>
+        <button class="button">Zapisz</button>
+      </form>
+      <form method="post" action="/api/notes/folders" class="folder-form">
+        <CsrfField /><input type="hidden" name="action" value="delete" /><input type="hidden" name="id" value={current.id} />
+        <button class="button button-secondary">Usuń folder i zachowaj notatki</button>
+      </form>
+    </details>}
+    <a class="folder-sort" href={listHref(current?.id ?? (filter === 'none' ? 'none' : ''), sort === 'title' ? 'updated' : 'title')}>{sort === 'title' ? 'Sortuj według aktualizacji' : 'Sortuj alfabetycznie'}</a>
+  </div>
+
+
   {
     notes.length === 0 ? (
       <div class="empty">
-        <p class="empty-title">Nie masz jeszcze notatek</p>
+        <p class="empty-title">{current || filter === 'none' ? 'Brak notatek w tym widoku' : 'Nie masz jeszcze notatek'}</p>
         <p>Napisz nową albo skopiuj którąś z publicznych (przycisk na stronie notatki).</p>
       </div>
     ) : (
@@ -74,6 +118,7 @@ const publicationByNote = isDatabaseConfigured()
                   <span class="badge">prywatna</span>
                 )}
                 <a href={`/moje/${note.slug}/edytuj/`}>Edytuj</a>
+                {note.folder_id && folders.find(folder => folder.id === note.folder_id)?.name && <span class="badge">{folders.find(folder => folder.id === note.folder_id)?.name}</span>}
                 {publication && (
                   <a
                     href={noteUrl(publication.subject_slug, publication.slug)}
@@ -84,6 +129,16 @@ const publicationByNote = isDatabaseConfigured()
                   </a>
                 )}
               </div>
+              {folders.length > 0 && <details class="move-note">
+                <summary>Przenieś</summary>
+                <form class="folder-form" action="/api/notes/folders" method="post">
+                  <CsrfField /><input type="hidden" name="action" value="move" /><input type="hidden" name="slug" value={note.slug} />
+                  <div class="field"><label for={`move-${note.id}`}>Folder dla „{note.title}”</label>
+                    <select id={`move-${note.id}`} name="id"><option value="">Bez folderu</option>{folders.map(folder => <option value={folder.id} selected={note.folder_id === folder.id}>{folder.name}</option>)}</select>
+                  </div>
+                  <button class="button button-secondary">Przenieś notatkę</button>
+                </form>
+              </details>}
             </li>
           );
         })}
@@ -91,3 +146,15 @@ const publicationByNote = isDatabaseConfigured()
     )
   }
 </Base>
+
+<style>
+  .folder-filters, .folder-tools { display: flex; flex-wrap: wrap; align-items: flex-start; gap: .6rem; margin-block: 1rem; }
+  .folder-filters .button { max-width: 100%; overflow-wrap: anywhere; text-align: left; }
+  .folder-filters [aria-current] { outline: 2px solid currentColor; outline-offset: -2px; }
+  .folder-tools details, .move-note { border: 1px solid var(--border); border-radius: .5rem; padding: .45rem .7rem; }
+  .folder-sort { padding: .45rem 0; }
+  .folder-form { margin-top: .6rem; display: grid; gap: .6rem; justify-items: start; }
+  .move-note { margin-top: .6rem; width: fit-content; max-width: 100%; }
+  .folder-form select { max-width: 100%; padding: .45rem; color: var(--text); background: var(--surface); border: 1px solid var(--border); border-radius: .4rem; font: inherit; }
+  summary { cursor: pointer; }
+</style>

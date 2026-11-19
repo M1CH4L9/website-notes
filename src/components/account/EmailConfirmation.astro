@@ -1,0 +1,44 @@
+---
+import Base from '../../layouts/Base.astro';
+import CsrfField from './CsrfField.astro';
+import { readEmailLink, type EmailPurpose } from '../../lib/server/account-email';
+import { MIN_PASSWORD_LENGTH } from '../../lib/server/password';
+
+interface Props { purpose: EmailPurpose }
+const { purpose } = Astro.props;
+const title = { register: 'Dokończ rejestrację', reset: 'Ustaw nowe hasło', profile: 'Potwierdź e-mail' }[purpose];
+const token = Astro.url.searchParams.get('token') || '';
+const link = Astro.locals.dbReady ? await readEmailLink(purpose, token) : null;
+const wrongAccount = purpose === 'profile' && link && Astro.locals.user?.id !== link.user_id;
+const retry = { register: '/rejestracja/', reset: '/haslo/', profile: '/profil/' }[purpose];
+const error = Astro.url.searchParams.get('error');
+---
+<Base title={title}>
+  <div class="auth-panel">
+    <h1 class="page-title">{title}</h1>
+    {error && <p class="form-error" role="alert">{error}</p>}
+    {!link ? (
+      <>
+        {!error && <p class="form-error">Link wygasł albo został już wykorzystany.</p>}
+        <p><a href={retry}>Wróć i poproś o nowy link</a></p>
+      </>
+    ) : wrongAccount ? (
+      <p>Zaloguj się na konto, dla którego wysłano link{Astro.locals.user ? ' i otwórz go ponownie.' : '.'}
+        {!Astro.locals.user && <a href={`/logowanie/?next=${encodeURIComponent(Astro.url.pathname + Astro.url.search)}`}> Zaloguj się</a>}
+      </p>
+    ) : (
+      <form class="auth-form" method="post" action="/api/auth/email-confirm">
+        <CsrfField />
+        <input type="hidden" name="purpose" value={purpose} />
+        <input type="hidden" name="token" value={token} />
+        {purpose !== 'reset' && <div class="field"><label for="confirmed-email">Adres e-mail</label><input id="confirmed-email" type="email" value={link.email} readonly autocomplete="email" /></div>}
+        {purpose === 'register' && <div class="field"><label for="username">Nazwa użytkownika</label><input id="username" name="username" autocomplete="username" required minlength="3" maxlength="32" pattern="[a-z0-9_]{3,32}" /><p class="hint">3–32 znaki. Małe litery, cyfry i _.</p></div>}
+        {purpose !== 'profile' && <>
+          <div class="field"><label for="password">Nowe hasło</label><input id="password" name="password" type="password" required autocomplete="new-password" minlength={MIN_PASSWORD_LENGTH} maxlength="200" /></div>
+          <div class="field"><label for="password_confirm">Powtórz hasło</label><input id="password_confirm" name="password_confirm" type="password" required autocomplete="new-password" minlength={MIN_PASSWORD_LENGTH} maxlength="200" /></div>
+        </>}
+        <div class="form-actions"><button class="button">{purpose === 'profile' ? 'Potwierdź adres' : purpose === 'register' ? 'Utwórz konto' : 'Zapisz hasło'}</button></div>
+      </form>
+    )}
+  </div>
+</Base>
